@@ -14,6 +14,14 @@ let psReadyResolvers = [];
 let currentKey = 'Space';
 let currentInterval = 100;
 
+let macroRecording = [];
+let isMacroPlaying = false;
+let macroPlaybackSpeed = 1;
+let macroContinuousPlayback = false;
+let recordHotkey = 'F7';
+let playbackHotkey = 'F8';
+const macroPlaybackTimers = new Set();
+
 function waitForPsReady(timeoutMs = 10000) {
   if (psReady) return Promise.resolve(true);
   return new Promise((resolve) => {
@@ -202,6 +210,230 @@ function simulateKeyPress(key) {
   }
 }
 
+function sendMacroError(message) {
+  if (mainWindow) {
+    mainWindow.webContents.send('macro-error', { message });
+  }
+}
+
+function sendMacroPlaybackStatus() {
+  if (mainWindow) {
+    mainWindow.webContents.send('macro-playback-status', {
+      playing: isMacroPlaying,
+      count: macroRecording.length,
+      speed: macroPlaybackSpeed,
+      continuous: macroContinuousPlayback,
+      recordHotkey,
+      playbackHotkey,
+    });
+  }
+}
+
+function scheduleMacroTimer(handler, delayMs) {
+  const timer = setTimeout(() => {
+    macroPlaybackTimers.delete(timer);
+    handler();
+  }, delayMs);
+  macroPlaybackTimers.add(timer);
+  return timer;
+}
+
+function clearMacroPlaybackTimers() {
+  macroPlaybackTimers.forEach((timer) => clearTimeout(timer));
+  macroPlaybackTimers.clear();
+}
+
+function normalizeRecordedEvents(events) {
+  if (!Array.isArray(events)) return [];
+  return events
+    .map((item) => ({
+      key: typeof item?.key === 'string' ? item.key.trim() : '',
+      time: Number(item?.time),
+    }))
+    .filter((item) => item.key && Number.isFinite(item.time))
+    .map((item) => ({
+      key: item.key,
+      time: Math.max(0, Math.round(item.time)),
+    }))
+    .sort((a, b) => a.time - b.time);
+}
+
+function stopMacroPlayback() {
+  if (!isMacroPlaying) return { success: true, playing: false };
+  isMacroPlaying = false;
+  clearMacroPlaybackTimers();
+  sendMacroPlaybackStatus();
+  return { success: true, playing: false };
+}
+
+async function startMacroPlayback(options = {}) {
+  if (isMacroPlaying) return { success: true, playing: true };
+
+  if (Array.isArray(options.events)) {
+    macroRecording = normalizeRecordedEvents(options.events);
+  }
+
+  if (!macroRecording.length) {
+    const error = 'No recorded keys to play';
+    sendMacroError(error);
+    return { success: false, error };
+  }
+
+  const speed = options.speed === undefined ? macroPlaybackSpeed : Number(options.speed);
+  if (!Number.isFinite(speed) || speed <= 0) {
+    const error = 'Playback speed must be greater than 0';
+    sendMacroError(error);
+    return { success: false, error };
+  }
+
+  const continuous =
+    typeof options.continuous === 'boolean' ? options.continuous : macroContinuousPlayback;
+
+  const ready = await waitForPsReady(10000);
+  if (!ready) {
+    const error = 'Key simulator not ready';
+    sendMacroError(error);
+    return { success: false, error };
+  }
+
+  macroPlaybackSpeed = speed;
+  macroContinuousPlayback = continuous;
+
+  const baseTime = macroRecording[0]?.time || 0;
+  const timeline = macroRecording.map((event) => ({
+    key: event.key,
+    time: Math.max(0, event.time - baseTime),
+  }));
+  const lastTime = timeline[timeline.length - 1]?.time || 0;
+
+  const runCycle = () => {
+    if (!isMacroPlaying) return;
+
+    timeline.forEach((event) => {
+      const delay = Math.max(0, Math.round(event.time / macroPlaybackSpeed));
+      scheduleMacroTimer(() => {
+        if (isMacroPlaying) {
+          simulateKeyPress(event.key);
+        }
+      }, delay);
+    });
+
+    const cycleDuration = Math.max(30, Math.round(lastTime / macroPlaybackSpeed) + 30);
+    scheduleMacroTimer(() => {
+      if (!isMacroPlaying) return;
+      if (macroContinuousPlayback) {
+        runCycle();
+      } else {
+        stopMacroPlayback();
+      }
+    }, cycleDuration);
+  };
+
+  isMacroPlaying = true;
+  sendMacroPlaybackStatus();
+  runCycle();
+  return { success: true, playing: true };
+}
+
+function registerGlobalHotkeys() {
+  globalShortcut.unregisterAll();
+
+  const failedHotkeys = [];
+  const registerSafe = (accelerator, handler) => {
+    try {
+      return globalShortcut.register(accelerator, handler);
+    } catch (error) {
+      console.error('[Hotkey] Failed to register:', accelerator, error.message);
+      return false;
+    }
+  };
+
+  if (
+    !registerSafe('F6', () => {
+      if (isRunning) {
+        stopClicker();
+      } else {
+        startClicker(currentKey, currentInterval);
+      }
+    })
+  ) {
+    failedHotkeys.push('F6');
+  }
+
+  if (
+    !registerSafe(recordHotkey, () => {
+      if (mainWindow) {
+        mainWindow.webContents.send('macro-hotkey-record-toggle');
+      }
+    })
+  ) {
+    failedHotkeys.push(recordHotkey);
+  }
+
+  if (
+    !registerSafe(playbackHotkey, () => {
+      if (isMacroPlaying) {
+        stopMacroPlayback();
+      } else {
+        startMacroPlayback().catch((error) => {
+          sendMacroError(error?.message || 'Failed to start playback');
+        });
+      }
+    })
+  ) {
+    failedHotkeys.push(playbackHotkey);
+  }
+
+  if (failedHotkeys.length > 0) {
+    const error = `Unable to register hotkey(s): ${failedHotkeys.join(', ')}`;
+    sendMacroError(error);
+    return { success: false, error };
+  }
+
+  sendMacroPlaybackStatus();
+  return { success: true };
+}
+
+function updateMacroSettings(settings = {}) {
+  const prevRecordHotkey = recordHotkey;
+  const prevPlaybackHotkey = playbackHotkey;
+
+  if (typeof settings.recordHotkey === 'string' && settings.recordHotkey.trim()) {
+    recordHotkey = settings.recordHotkey.trim();
+  }
+  if (typeof settings.playbackHotkey === 'string' && settings.playbackHotkey.trim()) {
+    playbackHotkey = settings.playbackHotkey.trim();
+  }
+  if (settings.speed !== undefined) {
+    const speed = Number(settings.speed);
+    if (!Number.isFinite(speed) || speed <= 0) {
+      return { success: false, error: 'Playback speed must be greater than 0' };
+    }
+    macroPlaybackSpeed = speed;
+  }
+  if (typeof settings.continuous === 'boolean') {
+    macroContinuousPlayback = settings.continuous;
+  }
+
+  const registerResult = registerGlobalHotkeys();
+  if (!registerResult.success) {
+    recordHotkey = prevRecordHotkey;
+    playbackHotkey = prevPlaybackHotkey;
+    registerGlobalHotkeys();
+    return registerResult;
+  }
+
+  return {
+    success: true,
+    settings: {
+      recordHotkey,
+      playbackHotkey,
+      speed: macroPlaybackSpeed,
+      continuous: macroContinuousPlayback,
+    },
+  };
+}
+
 function syncFloatingMode() {
   if (!mainWindow || mainWindow.isDestroyed()) return;
   const shouldFloat = !mainWindow.isMaximized() && !mainWindow.isFullScreen();
@@ -308,19 +540,13 @@ function stopClicker() {
 app.whenReady().then(() => {
   initKeySimulator();
   createWindow();
-
-  globalShortcut.register('F6', () => {
-    if (isRunning) {
-      stopClicker();
-    } else {
-      startClicker(currentKey, currentInterval);
-    }
-  });
+  registerGlobalHotkeys();
 });
 
 app.on('window-all-closed', () => {
   globalShortcut.unregisterAll();
   stopClicker();
+  stopMacroPlayback();
   destroyKeySimulator();
   if (process.platform !== 'darwin') {
     app.quit();
@@ -329,6 +555,7 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   stopClicker();
+  stopMacroPlayback();
   destroyKeySimulator();
 });
 
@@ -356,6 +583,39 @@ ipcMain.handle('stop-clicker', () => {
 
 ipcMain.handle('get-status', () => {
   return { running: isRunning };
+});
+
+ipcMain.handle('save-macro-recording', (event, { events }) => {
+  macroRecording = normalizeRecordedEvents(events);
+  sendMacroPlaybackStatus();
+  return { success: true, count: macroRecording.length };
+});
+
+ipcMain.handle('get-macro-recording', () => {
+  return { success: true, events: macroRecording };
+});
+
+ipcMain.handle('start-macro-playback', async (event, options = {}) => {
+  return await startMacroPlayback(options);
+});
+
+ipcMain.handle('stop-macro-playback', () => {
+  return stopMacroPlayback();
+});
+
+ipcMain.handle('get-macro-status', () => {
+  return {
+    playing: isMacroPlaying,
+    count: macroRecording.length,
+    speed: macroPlaybackSpeed,
+    continuous: macroContinuousPlayback,
+    recordHotkey,
+    playbackHotkey,
+  };
+});
+
+ipcMain.handle('update-macro-settings', (event, settings = {}) => {
+  return updateMacroSettings(settings);
 });
 
 ipcMain.handle('window-minimize', () => {

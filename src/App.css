@@ -444,6 +444,11 @@
   transition: all 0.2s ease;
 }
 
+.preset-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .preset-btn:hover {
   border-color: var(--accent-primary);
   color: var(--accent-secondary);
@@ -524,6 +529,114 @@
 
 .repeat-count-input .interval-unit {
   font-size: var(--font-size-2xs);
+}
+
+.macro-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.macro-actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.macro-actions-row .preset-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.macro-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.macro-speed-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.macro-custom-speed-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.macro-speed-input-wrapper {
+  max-width: 140px;
+}
+
+.macro-speed-input {
+  font-size: var(--font-size-lg);
+  padding: 8px 12px;
+  padding-right: 30px;
+}
+
+.macro-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.macro-checkbox input {
+  accent-color: var(--accent-primary);
+}
+
+.macro-hotkey-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.macro-hotkey-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.macro-hotkey-input {
+  font-size: var(--font-size-sm);
+  padding: 10px 12px;
+  padding-right: 12px;
+}
+
+.macro-hotkey-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.macro-hotkey-active {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+}
+
+.macro-error {
+  color: var(--danger);
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  font-size: var(--font-size-xs);
+}
+
+@media (max-width: 540px) {
+  .macro-hotkey-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .action-section {
