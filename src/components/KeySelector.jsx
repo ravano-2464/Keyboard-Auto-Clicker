@@ -15,7 +15,6 @@ export default function KeySelector({ selectedKey, onKeyChange, disabled }) {
     e.preventDefault();
     e.stopPropagation();
 
-    // Ignore F6 (toggle hotkey)
     if (e.key === 'F6') return;
 
     let keyName = e.key;

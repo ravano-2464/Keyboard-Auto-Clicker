@@ -8,11 +8,54 @@ import IntervalSettings from './components/IntervalSettings';
 import RepeatMode from './components/RepeatMode';
 import StatsBar from './components/StatsBar';
 
+function simulateKeyInBrowser(key) {
+  let eventKey = key;
+  let eventCode = '';
+
+  if (key === 'Space' || key === ' ') {
+    eventKey = ' ';
+    eventCode = 'Space';
+  } else if (key === 'Enter') {
+    eventKey = 'Enter';
+    eventCode = 'Enter';
+  } else if (key === 'Tab') {
+    eventKey = 'Tab';
+    eventCode = 'Tab';
+  } else if (key === 'Escape') {
+    eventKey = 'Escape';
+    eventCode = 'Escape';
+  } else if (key === 'Backspace') {
+    eventKey = 'Backspace';
+    eventCode = 'Backspace';
+  } else if (key.length === 1) {
+    eventKey = key.toLowerCase();
+    eventCode = `Key${key.toUpperCase()}`;
+  } else {
+    eventCode = key;
+  }
+
+  const target = document.activeElement || document.body;
+
+  target.dispatchEvent(new KeyboardEvent('keydown', {
+    key: eventKey,
+    code: eventCode,
+    bubbles: true,
+    cancelable: true,
+  }));
+
+  target.dispatchEvent(new KeyboardEvent('keyup', {
+    key: eventKey,
+    code: eventCode,
+    bubbles: true,
+    cancelable: true,
+  }));
+}
+
 function App() {
   const [selectedKey, setSelectedKey] = useState('Space');
   const [interval, setInterval_] = useState(100);
   const [isRunning, setIsRunning] = useState(false);
-  const [repeatMode, setRepeatMode] = useState('infinite'); // 'infinite' | 'count'
+  const [repeatMode, setRepeatMode] = useState('infinite');
   const [repeatCount, setRepeatCount] = useState(100);
   const [clickCount, setClickCount] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -22,9 +65,9 @@ function App() {
   const timerRef = useRef(null);
   const localIntervalRef = useRef(null);
 
-  // Refs for values used in interval callbacks
   const repeatModeRef = useRef(repeatMode);
   const repeatCountRef = useRef(repeatCount);
+  const selectedKeyRef = useRef(selectedKey);
 
   useEffect(() => {
     repeatModeRef.current = repeatMode;
@@ -34,7 +77,10 @@ function App() {
     repeatCountRef.current = repeatCount;
   }, [repeatCount]);
 
-  // Update elapsed time while running
+  useEffect(() => {
+    selectedKeyRef.current = selectedKey;
+  }, [selectedKey]);
+
   useEffect(() => {
     if (isRunning) {
       startTimeRef.current = Date.now();
@@ -74,23 +120,22 @@ function App() {
     setElapsedTime(0);
 
     if (window.electronAPI) {
-      // Use Electron IPC
-      await window.electronAPI.startClicker(selectedKey, interval);
-      setIsRunning(true);
-
-      // Track click count locally
-      localIntervalRef.current = window.setInterval(() => {
-        clickCountRef.current += 1;
-        setClickCount(clickCountRef.current);
-
-        if (repeatModeRef.current === 'count' && clickCountRef.current >= repeatCountRef.current) {
-          stopClicker();
+      try {
+        const result = await window.electronAPI.startClicker(selectedKey, interval);
+        if (!result?.success) {
+          setIsRunning(false);
+          console.error('[Clicker] Failed to start:', result?.error || 'Unknown error');
+          return;
         }
-      }, interval);
+        setIsRunning(Boolean(result.running));
+      } catch (error) {
+        setIsRunning(false);
+        console.error('[Clicker] Failed to start:', error);
+      }
     } else {
-      // Fallback for browser dev mode (simulate)
       setIsRunning(true);
       localIntervalRef.current = window.setInterval(() => {
+        simulateKeyInBrowser(selectedKeyRef.current);
         clickCountRef.current += 1;
         setClickCount(clickCountRef.current);
 
@@ -109,22 +154,48 @@ function App() {
     }
   }, [isRunning, startClicker, stopClicker]);
 
-  // Listen for F6 hotkey from Electron
+  useEffect(() => {
+    if (window.electronAPI?.updateSettings) {
+      window.electronAPI.updateSettings(selectedKey, interval);
+    }
+  }, [selectedKey, interval]);
+
+  useEffect(() => {
+    if (window.electronAPI) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'F6') {
+        e.preventDefault();
+        toggleClicker();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [toggleClicker]);
+
+
   useEffect(() => {
     if (window.electronAPI) {
-      const cleanup = window.electronAPI.onToggleFromHotkey(() => {
-        toggleClicker();
+      const cleanup = window.electronAPI.onClickerTick(() => {
+        clickCountRef.current += 1;
+        setClickCount(clickCountRef.current);
+
+        if (repeatModeRef.current === 'count' && clickCountRef.current >= repeatCountRef.current) {
+          stopClicker();
+        }
       });
       return cleanup;
     }
-  }, [toggleClicker]);
+  }, [stopClicker]);
 
-  // Listen for status updates from Electron
   useEffect(() => {
     if (window.electronAPI) {
       const cleanup = window.electronAPI.onClickerStatus((data) => {
         setIsRunning(data.running);
-        if (!data.running) {
+        if (data.running) {
+          setClickCount(0);
+          clickCountRef.current = 0;
+          setElapsedTime(0);
+        } else {
           if (localIntervalRef.current) {
             clearInterval(localIntervalRef.current);
             localIntervalRef.current = null;

@@ -1,6 +1,3 @@
-/* =============================================
-   APP CONTAINER
-   ============================================= */
 .app-container {
   width: 100%;
   height: 100vh;
@@ -26,9 +23,6 @@
   z-index: 0;
 }
 
-/* =============================================
-   TITLEBAR
-   ============================================= */
 .titlebar {
   display: flex;
   align-items: center;
@@ -105,9 +99,6 @@
   color: white;
 }
 
-/* =============================================
-   MAIN CONTENT
-   ============================================= */
 .main-content {
   flex: 1;
   overflow-y: auto;
@@ -119,9 +110,6 @@
   gap: 16px;
 }
 
-/* =============================================
-   STATUS INDICATOR
-   ============================================= */
 .status-section {
   display: flex;
   flex-direction: column;
@@ -231,9 +219,6 @@
   letter-spacing: 0.05em;
 }
 
-/* =============================================
-   SETTINGS CARDS
-   ============================================= */
 .settings-card {
   background: var(--bg-card);
   border: 1px solid var(--border-primary);
@@ -279,9 +264,6 @@
   margin-top: 2px;
 }
 
-/* =============================================
-   KEY SELECTOR
-   ============================================= */
 .key-selector-grid {
   display: flex;
   flex-direction: column;
@@ -373,9 +355,6 @@
   --success-glow: var(--accent-glow);
 }
 
-/* =============================================
-   INTERVAL SETTINGS
-   ============================================= */
 .interval-controls {
   display: flex;
   flex-direction: column;
@@ -464,9 +443,6 @@
   color: var(--accent-secondary);
 }
 
-/* =============================================
-   REPEAT MODE
-   ============================================= */
 .repeat-mode-group {
   display: flex;
   flex-direction: column;
@@ -533,9 +509,6 @@
   font-size: 10px;
 }
 
-/* =============================================
-   ACTION BUTTON
-   ============================================= */
 .action-section {
   padding: 0 0 4px;
   animation: slideUp 0.6s ease;
@@ -610,9 +583,6 @@
   transform: translateY(0);
 }
 
-/* =============================================
-   STATS BAR
-   ============================================= */
 .stats-bar {
   display: flex;
   align-items: center;
@@ -656,9 +626,6 @@
   background: var(--border-primary);
 }
 
-/* =============================================
-   KEY PRESET GRID  
-   ============================================= */
 .key-preset-section {
   margin-top: 4px;
 }
@@ -706,9 +673,6 @@
   color: var(--accent-secondary);
 }
 
-/* =============================================
-   FOOTER
-   ============================================= */
 .app-footer {
   display: flex;
   align-items: center;
