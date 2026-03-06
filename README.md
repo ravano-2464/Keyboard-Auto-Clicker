@@ -134,28 +134,31 @@ Output installer/build ada di folder `release/`.
 
 ```text
 Keyboard Auto Clicker/
-├── electron/
-│   ├── main.cjs
-│   └── preload.cjs
-├── src/
-│   ├── components/
-│   │   ├── styles/
-│   │   │   ├── colors.css
-│   │   │   └── typography.css
-│   │   ├── IntervalSettings.jsx
-│   │   ├── KeyboardRecorder.jsx
-│   │   ├── KeySelector.jsx
-│   │   ├── RepeatMode.jsx
-│   │   ├── StatsBar.jsx
-│   │   ├── StatusOrb.jsx
-│   │   └── TitleBar.jsx
-│   ├── App.css
-│   ├── App.jsx
-│   ├── index.css
-│   └── main.jsx
-├── public/
-├── package.json
-└── README.md
+├── electron/                          # Kode sisi Electron (main process + bridge)
+│   ├── main.cjs                       # Buat window, IPC handler, global hotkey, clicker & macro engine
+│   └── preload.cjs                    # Expose API aman ke renderer via contextBridge
+├── src/                               # Kode UI React (renderer process)
+│   ├── components/                    # Komponen UI modular
+│   │   ├── styles/                    # Design token terpusat untuk komponen
+│   │   │   ├── colors.css             # Token warna dark/light mode
+│   │   │   └── typography.css         # Token typography (font-size, line-height, font-weight, dll)
+│   │   ├── IntervalSettings.jsx       # UI pengaturan interval auto clicker
+│   │   ├── KeyboardRecorder.jsx       # UI recording/playback macro + manual editor + hotkey settings
+│   │   ├── KeySelector.jsx            # UI pilih tombol target auto clicker
+│   │   ├── RepeatMode.jsx             # UI mode repeat (Infinite / Custom Count)
+│   │   ├── StatsBar.jsx               # Panel statistik runtime (click, waktu, key aktif)
+│   │   ├── StatusOrb.jsx              # Indikator status idle/running
+│   │   └── TitleBar.jsx               # Custom title bar (minimize, maximize, close, toggle theme)
+│   ├── hooks/                         # Logic layer (state + effect + helpers)
+│   │   ├── appHelpers.js              # Helper function & konstanta util app
+│   │   └── useAppController.js        # Pusat semua state/effect/callback aplikasi
+│   ├── App.css                        # Styling utama layout aplikasi
+│   ├── App.jsx                        # Root UI; konsumsi `useAppController` dan render komponen
+│   ├── index.css                      # Global style/reset
+│   └── main.jsx                       # Entry point React (mount ke DOM)
+├── public/                            # Asset publik (ikon/file statis)
+├── package.json                       # Script npm, dependency, metadata project, config build
+└── README.md                          # Dokumentasi project
 ```
 
 ## 📝 Notes
