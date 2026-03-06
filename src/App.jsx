@@ -37,7 +37,10 @@ function normalizeHotkeyInput(rawValue) {
 
 function getHotkeyMainKey(hotkey) {
   if (!hotkey) return '';
-  const parts = hotkey.split('+').map((part) => part.trim()).filter(Boolean);
+  const parts = hotkey
+    .split('+')
+    .map((part) => part.trim())
+    .filter(Boolean);
   if (parts.length === 0) return '';
   return parts[parts.length - 1].toLowerCase();
 }
@@ -540,7 +543,11 @@ function App() {
 
         <KeySelector selectedKey={selectedKey} onKeyChange={setSelectedKey} disabled={isRunning} />
 
-        <IntervalSettings interval={interval} onIntervalChange={setInterval_} disabled={isRunning} />
+        <IntervalSettings
+          interval={interval}
+          onIntervalChange={setInterval_}
+          disabled={isRunning}
+        />
 
         <RepeatMode
           mode={repeatMode}
@@ -565,14 +572,25 @@ function App() {
 
           <div className="macro-panel">
             <div className="macro-actions-row">
-              <button className={`preset-btn ${isMacroRecording ? 'active' : ''}`} onClick={toggleMacroRecording}>
+              <button
+                className={`preset-btn ${isMacroRecording ? 'active' : ''}`}
+                onClick={toggleMacroRecording}
+              >
                 {recordingLabel}
               </button>
-              <button className="preset-btn" onClick={clearMacroRecording} disabled={isMacroRecording}>
+              <button
+                className="preset-btn"
+                onClick={clearMacroRecording}
+                disabled={isMacroRecording}
+              >
                 <Trash2 size={12} />
                 Clear
               </button>
-              <button className={`preset-btn ${isMacroPlaying ? 'active' : ''}`} onClick={toggleMacroPlayback} disabled={!canStartMacroPlayback}>
+              <button
+                className={`preset-btn ${isMacroPlaying ? 'active' : ''}`}
+                onClick={toggleMacroPlayback}
+                disabled={!canStartMacroPlayback}
+              >
                 {playbackLabel}
               </button>
             </div>
@@ -640,7 +658,9 @@ function App() {
                   type="text"
                   className="interval-input macro-hotkey-input"
                   value={recordHotkeyInput}
-                  onChange={(event) => setRecordHotkeyInput(normalizeHotkeyInput(event.target.value))}
+                  onChange={(event) =>
+                    setRecordHotkeyInput(normalizeHotkeyInput(event.target.value))
+                  }
                   placeholder="F7 or CTRL+SHIFT+R"
                 />
               </div>
@@ -650,7 +670,9 @@ function App() {
                   type="text"
                   className="interval-input macro-hotkey-input"
                   value={playbackHotkeyInput}
-                  onChange={(event) => setPlaybackHotkeyInput(normalizeHotkeyInput(event.target.value))}
+                  onChange={(event) =>
+                    setPlaybackHotkeyInput(normalizeHotkeyInput(event.target.value))
+                  }
                   placeholder="F8 or CTRL+SHIFT+P"
                 />
               </div>
