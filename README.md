@@ -12,15 +12,15 @@ Aplikasi desktop **Keyboard Auto Clicker** yang dibuat menggunakan **React**, **
 
 ## ✨ Fitur
 
-| Fitur | Deskripsi |
-|---|---|
-| 🎯 **Target Key** | Pilih tombol yang ingin di-auto-click secara langsung atau deteksi otomatis via keypress |
-| ⏱️ **Click Interval** | Atur delay antar penekanan tombol (input manual + preset: 50ms, 100ms, 250ms, 500ms, 1s, 2s) |
-| 🔄 **Repeat Mode** | Pilih mode **Infinite** (tanpa batas) atau **Custom Count** (jumlah tertentu) |
-| ⌨️ **Hotkey F6** | Toggle start/stop kapan saja menggunakan global shortcut `F6` |
-| 📊 **Live Stats** | Pantau real-time: tombol aktif, total clicks, dan elapsed time |
-| 🖥️ **Custom Titlebar** | Frameless window dengan titlebar custom yang elegan |
-| 🎨 **Premium Dark UI** | Glassmorphism, animasi pulse, gradient, dan micro-animations |
+| Fitur                  | Deskripsi                                                                                    |
+| ---------------------- | -------------------------------------------------------------------------------------------- |
+| 🎯 **Target Key**      | Pilih tombol yang ingin di-auto-click secara langsung atau deteksi otomatis via keypress     |
+| ⏱️ **Click Interval**  | Atur delay antar penekanan tombol (input manual + preset: 50ms, 100ms, 250ms, 500ms, 1s, 2s) |
+| 🔄 **Repeat Mode**     | Pilih mode **Infinite** (tanpa batas) atau **Custom Count** (jumlah tertentu)                |
+| ⌨️ **Hotkey F6**       | Toggle start/stop kapan saja menggunakan global shortcut `F6`                                |
+| 📊 **Live Stats**      | Pantau real-time: tombol aktif, total clicks, dan elapsed time                               |
+| 🖥️ **Custom Titlebar** | Frameless window dengan titlebar custom yang elegan                                          |
+| 🎨 **Premium Dark UI** | Glassmorphism, animasi pulse, gradient, dan micro-animations                                 |
 
 ---
 
@@ -42,6 +42,9 @@ Keyboard Auto Clicker/
 │   ├── main.cjs              # Electron main process
 │   └── preload.cjs           # IPC bridge (contextBridge)
 ├── src/
+│   ├── styles/
+│   │   ├── colors.css        # Color palette
+│   │   └── typography.css    # Typography
 │   ├── components/
 │   │   ├── TitleBar.jsx      # Custom frameless titlebar
 │   │   ├── StatusOrb.jsx     # Animated status indicator (idle/running)
@@ -112,15 +115,15 @@ Hasil build akan tersedia di folder `release/`.
 
 ## 📜 Available Scripts
 
-| Script | Deskripsi |
-|---|---|
-| `npm run dev` | Jalankan Vite dev server saja (tanpa Electron) |
-| `npm run build` | Build production bundle Vite |
-| `npm run lint` | Jalankan ESLint untuk cek code quality |
-| `npm run preview` | Preview hasil build production |
-| `npm run electron:dev` | Jalankan Vite + Electron secara bersamaan (development) |
-| `npm run electron:build` | Build production + package Electron app |
-| `npm run electron:start` | Jalankan Electron saja (harus build Vite dulu) |
+| Script                   | Deskripsi                                               |
+| ------------------------ | ------------------------------------------------------- |
+| `npm run dev`            | Jalankan Vite dev server saja (tanpa Electron)          |
+| `npm run build`          | Build production bundle Vite                            |
+| `npm run lint`           | Jalankan ESLint untuk cek code quality                  |
+| `npm run preview`        | Preview hasil build production                          |
+| `npm run electron:dev`   | Jalankan Vite + Electron secara bersamaan (development) |
+| `npm run electron:build` | Build production + package Electron app                 |
+| `npm run electron:start` | Jalankan Electron saja (harus build Vite dulu)          |
 
 ---
 
@@ -138,6 +141,7 @@ Hasil build akan tersedia di folder `release/`.
 ## 🎨 UI Preview
 
 Aplikasi menggunakan design system premium dengan:
+
 - **Dark theme** dengan warna indigo/violet accent
 - **Glassmorphism** cards dengan backdrop blur
 - **Animated status orb** yang berubah warna dan animasi saat running

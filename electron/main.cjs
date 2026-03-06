@@ -37,19 +37,33 @@ function resolvePsReadyWaiters(isReady) {
 
 // SendKeys string map (WScript.Shell format) — no C# compilation needed
 const SENDKEYS_MAP = {
-  'space': '{SPACE}', ' ': '{SPACE}',
-  'enter': '{ENTER}',
-  'tab': '{TAB}',
-  'escape': '{ESC}',
-  'backspace': '{BACKSPACE}',
-  'delete': '{DELETE}',
-  'arrowup': '{UP}', 'arrowdown': '{DOWN}',
-  'arrowleft': '{LEFT}', 'arrowright': '{RIGHT}',
-  'home': '{HOME}', 'end': '{END}',
-  'pageup': '{PGUP}', 'pagedown': '{PGDN}',
-  'f1': '{F1}', 'f2': '{F2}', 'f3': '{F3}', 'f4': '{F4}',
-  'f5': '{F5}', 'f6': '{F6}', 'f7': '{F7}', 'f8': '{F8}',
-  'f9': '{F9}', 'f10': '{F10}', 'f11': '{F11}', 'f12': '{F12}',
+  space: '{SPACE}',
+  ' ': '{SPACE}',
+  enter: '{ENTER}',
+  tab: '{TAB}',
+  escape: '{ESC}',
+  backspace: '{BACKSPACE}',
+  delete: '{DELETE}',
+  arrowup: '{UP}',
+  arrowdown: '{DOWN}',
+  arrowleft: '{LEFT}',
+  arrowright: '{RIGHT}',
+  home: '{HOME}',
+  end: '{END}',
+  pageup: '{PGUP}',
+  pagedown: '{PGDN}',
+  f1: '{F1}',
+  f2: '{F2}',
+  f3: '{F3}',
+  f4: '{F4}',
+  f5: '{F5}',
+  f6: '{F6}',
+  f7: '{F7}',
+  f8: '{F8}',
+  f9: '{F9}',
+  f10: '{F10}',
+  f11: '{F11}',
+  f12: '{F12}',
 };
 
 // SendKeys chars that must be wrapped in braces to be treated literally
@@ -113,13 +127,14 @@ function initKeySimulator() {
     return;
   }
 
-  psProcess = spawn('powershell.exe', [
-    '-NoProfile', '-NoLogo', '-ExecutionPolicy', 'Bypass',
-    '-File', scriptPath,
-  ], {
-    stdio: ['pipe', 'pipe', 'pipe'],
-    windowsHide: true,
-  });
+  psProcess = spawn(
+    'powershell.exe',
+    ['-NoProfile', '-NoLogo', '-ExecutionPolicy', 'Bypass', '-File', scriptPath],
+    {
+      stdio: ['pipe', 'pipe', 'pipe'],
+      windowsHide: true,
+    }
+  );
 
   let buffer = '';
   psProcess.stdout.on('data', (data) => {
@@ -164,7 +179,9 @@ function destroyKeySimulator() {
   }
 
   if (scriptPath) {
-    try { fs.unlinkSync(scriptPath); } catch (_) {}
+    try {
+      fs.unlinkSync(scriptPath);
+    } catch (_) {}
     scriptPath = null;
   }
 }

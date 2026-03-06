@@ -5,7 +5,7 @@ export default function StatsBar({ clickCount, elapsedTime, selectedKey }) {
     const seconds = Math.floor(ms / 1000);
     const minutes = Math.floor(seconds / 60);
     const hours = Math.floor(minutes / 60);
-    
+
     if (hours > 0) {
       return `${hours}h ${minutes % 60}m ${seconds % 60}s`;
     }
@@ -31,9 +31,9 @@ export default function StatsBar({ clickCount, elapsedTime, selectedKey }) {
           <div className="stat-value">{formatKey(selectedKey)}</div>
         </div>
       </div>
-      
+
       <div className="stat-divider" />
-      
+
       <div className="stat-item">
         <Hash size={12} className="stat-icon" />
         <div>
@@ -41,9 +41,9 @@ export default function StatsBar({ clickCount, elapsedTime, selectedKey }) {
           <div className="stat-value">{clickCount.toLocaleString()}</div>
         </div>
       </div>
-      
+
       <div className="stat-divider" />
-      
+
       <div className="stat-item">
         <Clock size={12} className="stat-icon" />
         <div>

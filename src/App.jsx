@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Play, Square } from 'lucide-react';
+import './components/styles/colors.css';
+import './components/styles/typography.css';
 import './App.css';
 import TitleBar from './components/TitleBar';
 import StatusOrb from './components/StatusOrb';
@@ -7,6 +9,17 @@ import KeySelector from './components/KeySelector';
 import IntervalSettings from './components/IntervalSettings';
 import RepeatMode from './components/RepeatMode';
 import StatsBar from './components/StatsBar';
+
+const THEME_STORAGE_KEY = 'kac-theme';
+
+function getInitialTheme() {
+  if (typeof window === 'undefined') return 'dark';
+  const savedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
+  if (savedTheme === 'dark' || savedTheme === 'light') {
+    return savedTheme;
+  }
+  return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+}
 
 function simulateKeyInBrowser(key) {
   let eventKey = key;
@@ -36,19 +49,23 @@ function simulateKeyInBrowser(key) {
 
   const target = document.activeElement || document.body;
 
-  target.dispatchEvent(new KeyboardEvent('keydown', {
-    key: eventKey,
-    code: eventCode,
-    bubbles: true,
-    cancelable: true,
-  }));
+  target.dispatchEvent(
+    new KeyboardEvent('keydown', {
+      key: eventKey,
+      code: eventCode,
+      bubbles: true,
+      cancelable: true,
+    })
+  );
 
-  target.dispatchEvent(new KeyboardEvent('keyup', {
-    key: eventKey,
-    code: eventCode,
-    bubbles: true,
-    cancelable: true,
-  }));
+  target.dispatchEvent(
+    new KeyboardEvent('keyup', {
+      key: eventKey,
+      code: eventCode,
+      bubbles: true,
+      cancelable: true,
+    })
+  );
 }
 
 function App() {
@@ -59,6 +76,7 @@ function App() {
   const [repeatCount, setRepeatCount] = useState(100);
   const [clickCount, setClickCount] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [theme, setTheme] = useState(getInitialTheme);
 
   const clickCountRef = useRef(0);
   const startTimeRef = useRef(null);
@@ -80,6 +98,11 @@ function App() {
   useEffect(() => {
     selectedKeyRef.current = selectedKey;
   }, [selectedKey]);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+  }, [theme]);
 
   useEffect(() => {
     if (isRunning) {
@@ -114,7 +137,7 @@ function App() {
 
   const startClicker = useCallback(async () => {
     if (!selectedKey) return;
-    
+
     setClickCount(0);
     clickCountRef.current = 0;
     setElapsedTime(0);
@@ -154,6 +177,10 @@ function App() {
     }
   }, [isRunning, startClicker, stopClicker]);
 
+  const toggleTheme = useCallback(() => {
+    setTheme((prevTheme) => (prevTheme === 'dark' ? 'light' : 'dark'));
+  }, []);
+
   useEffect(() => {
     if (window.electronAPI?.updateSettings) {
       window.electronAPI.updateSettings(selectedKey, interval);
@@ -171,7 +198,6 @@ function App() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [toggleClicker]);
-
 
   useEffect(() => {
     if (window.electronAPI) {
@@ -208,16 +234,12 @@ function App() {
 
   return (
     <div className="app-container">
-      <TitleBar />
+      <TitleBar theme={theme} onToggleTheme={toggleTheme} />
 
       <div className="main-content">
         <StatusOrb isRunning={isRunning} />
 
-        <KeySelector
-          selectedKey={selectedKey}
-          onKeyChange={setSelectedKey}
-          disabled={isRunning}
-        />
+        <KeySelector selectedKey={selectedKey} onKeyChange={setSelectedKey} disabled={isRunning} />
 
         <IntervalSettings
           interval={interval}
@@ -234,10 +256,7 @@ function App() {
         />
 
         <div className="action-section">
-          <button
-            className={`action-btn ${isRunning ? 'stop' : 'start'}`}
-            onClick={toggleClicker}
-          >
+          <button className={`action-btn ${isRunning ? 'stop' : 'start'}`} onClick={toggleClicker}>
             {isRunning ? (
               <>
                 <Square size={18} />
@@ -253,11 +272,7 @@ function App() {
         </div>
       </div>
 
-      <StatsBar
-        clickCount={clickCount}
-        elapsedTime={elapsedTime}
-        selectedKey={selectedKey}
-      />
+      <StatsBar clickCount={clickCount} elapsedTime={elapsedTime} selectedKey={selectedKey} />
     </div>
   );
 }

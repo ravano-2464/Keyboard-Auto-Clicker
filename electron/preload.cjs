@@ -5,7 +5,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   stopClicker: () => ipcRenderer.invoke('stop-clicker'),
   getStatus: () => ipcRenderer.invoke('get-status'),
   updateSettings: (key, interval) => ipcRenderer.invoke('update-settings', { key, interval }),
-  
+
   minimize: () => ipcRenderer.invoke('window-minimize'),
   maximize: () => ipcRenderer.invoke('window-maximize'),
   close: () => ipcRenderer.invoke('window-close'),

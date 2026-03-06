@@ -1,6 +1,6 @@
-import { Minus, Square, X, Keyboard } from 'lucide-react';
+import { Minus, Square, X, Keyboard, Moon, Sun } from 'lucide-react';
 
-export default function TitleBar() {
+export default function TitleBar({ theme, onToggleTheme }) {
   const handleMinimize = () => {
     if (window.electronAPI) {
       window.electronAPI.minimize();
@@ -31,6 +31,13 @@ export default function TitleBar() {
         </div>
       </div>
       <div className="titlebar-controls">
+        <button
+          className="titlebar-btn theme-toggle-btn"
+          onClick={onToggleTheme}
+          title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+        >
+          {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+        </button>
         <button className="titlebar-btn" onClick={handleMinimize} title="Minimize">
           <Minus size={14} />
         </button>

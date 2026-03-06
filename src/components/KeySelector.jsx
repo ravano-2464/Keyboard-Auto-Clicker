@@ -2,27 +2,45 @@ import { useState, useEffect, useCallback } from 'react';
 import { Keyboard, MousePointerClick, Crosshair } from 'lucide-react';
 
 const QUICK_KEYS = [
-  'A', 'B', 'C', 'D', 'E', 'F',
-  'G', 'H', 'I', 'J', 'K', 'L',
-  'W', 'S', 'Space', 'Enter', '1', '2',
+  'A',
+  'B',
+  'C',
+  'D',
+  'E',
+  'F',
+  'G',
+  'H',
+  'I',
+  'J',
+  'K',
+  'L',
+  'W',
+  'S',
+  'Space',
+  'Enter',
+  '1',
+  '2',
 ];
 
 export default function KeySelector({ selectedKey, onKeyChange, disabled }) {
   const [isListening, setIsListening] = useState(false);
 
-  const handleKeyDown = useCallback((e) => {
-    if (!isListening) return;
-    e.preventDefault();
-    e.stopPropagation();
+  const handleKeyDown = useCallback(
+    (e) => {
+      if (!isListening) return;
+      e.preventDefault();
+      e.stopPropagation();
 
-    if (e.key === 'F6') return;
+      if (e.key === 'F6') return;
 
-    let keyName = e.key;
-    if (keyName === ' ') keyName = 'Space';
-    
-    onKeyChange(keyName);
-    setIsListening(false);
-  }, [isListening, onKeyChange]);
+      let keyName = e.key;
+      if (keyName === ' ') keyName = 'Space';
+
+      onKeyChange(keyName);
+      setIsListening(false);
+    },
+    [isListening, onKeyChange]
+  );
 
   useEffect(() => {
     if (isListening) {
@@ -58,14 +76,14 @@ export default function KeySelector({ selectedKey, onKeyChange, disabled }) {
       <div className="key-selector-grid">
         <div className={`key-display ${isListening ? 'listening' : ''}`}>
           <div className={`key-cap ${isListening ? 'listening' : ''}`}>
-            {isListening ? (
-              <Crosshair size={20} />
-            ) : (
-              formatKeyDisplay(selectedKey)
-            )}
+            {isListening ? <Crosshair size={20} /> : formatKeyDisplay(selectedKey)}
           </div>
           <div className="key-display-label">
-            {isListening ? 'Press any key...' : selectedKey ? `Key: ${formatKeyDisplay(selectedKey)}` : 'No key selected'}
+            {isListening
+              ? 'Press any key...'
+              : selectedKey
+                ? `Key: ${formatKeyDisplay(selectedKey)}`
+                : 'No key selected'}
           </div>
         </div>
 

@@ -7,11 +7,7 @@ export default function StatusOrb({ isRunning }) {
         <div className={`status-orb ${isRunning ? 'running' : 'idle'}`}>
           <div className="status-orb-ring" />
           <div className="status-orb-icon">
-            {isRunning ? (
-              <Loader size={32} />
-            ) : (
-              <Zap size={32} />
-            )}
+            {isRunning ? <Loader size={32} /> : <Zap size={32} />}
           </div>
         </div>
       </div>

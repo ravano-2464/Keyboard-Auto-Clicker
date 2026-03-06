@@ -44,15 +44,16 @@ export default function IntervalSettings({ interval, onIntervalChange, disabled 
             />
             <span className="interval-unit">ms</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <Gauge size={14} style={{ color: 'var(--text-tertiary)' }} />
-            <span style={{ 
-              fontSize: 11, 
-              color: 'var(--text-tertiary)',
-              fontWeight: 500,
-              whiteSpace: 'nowrap'
-            }}>
-              {interval < 100 ? 'Very Fast' : interval < 500 ? 'Fast' : interval < 1000 ? 'Normal' : 'Slow'}
+          <div className="interval-speed-indicator">
+            <Gauge size={14} className="stat-icon" />
+            <span className="interval-speed-label">
+              {interval < 100
+                ? 'Very Fast'
+                : interval < 500
+                  ? 'Fast'
+                  : interval < 1000
+                    ? 'Normal'
+                    : 'Slow'}
             </span>
           </div>
         </div>

@@ -1,6 +1,12 @@
 import { Repeat, Infinity as InfinityIcon, Hash } from 'lucide-react';
 
-export default function RepeatMode({ mode, onModeChange, repeatCount, onRepeatCountChange, disabled }) {
+export default function RepeatMode({
+  mode,
+  onModeChange,
+  repeatCount,
+  onRepeatCountChange,
+  disabled,
+}) {
   return (
     <div className="settings-card">
       <div className="card-header">
@@ -39,7 +45,7 @@ export default function RepeatMode({ mode, onModeChange, repeatCount, onRepeatCo
 
         {mode === 'count' && (
           <div className="repeat-count-input">
-            <div className="interval-input-wrapper" style={{ flex: 1 }}>
+            <div className="interval-input-wrapper repeat-count-input-wrapper">
               <input
                 type="number"
                 className="interval-input"
