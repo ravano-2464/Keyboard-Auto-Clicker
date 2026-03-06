@@ -50,13 +50,18 @@ export default function KeyboardRecorder({
         </div>
         <div>
           <div className="card-title">Keyboard Recorder</div>
-          <div className="card-subtitle">Record keystrokes, set playback speed, and run continuous loop</div>
+          <div className="card-subtitle">
+            Record keystrokes, set playback speed, and run continuous loop
+          </div>
         </div>
       </div>
 
       <div className="macro-panel">
         <div className="macro-actions-row">
-          <button className={`preset-btn ${isMacroRecording ? 'active' : ''}`} onClick={onToggleRecording}>
+          <button
+            className={`preset-btn ${isMacroRecording ? 'active' : ''}`}
+            onClick={onToggleRecording}
+          >
             {recordingLabel}
           </button>
           <button className="preset-btn" onClick={onClearRecording} disabled={isMacroRecording}>
@@ -114,7 +119,9 @@ export default function KeyboardRecorder({
           </div>
 
           {manualSteps.length === 0 ? (
-            <div className="macro-step-empty">No steps yet. Add steps manually or start recording inside the app.</div>
+            <div className="macro-step-empty">
+              No steps yet. Add steps manually or start recording inside the app.
+            </div>
           ) : (
             <div className="macro-step-list">
               {manualSteps.map((step, index) => (
@@ -124,7 +131,9 @@ export default function KeyboardRecorder({
                     type="text"
                     className="interval-input macro-step-key-input"
                     value={step.key}
-                    onChange={(event) => onUpdateManualStep(index, { key: normalizeRecordedKey(event.target.value) })}
+                    onChange={(event) =>
+                      onUpdateManualStep(index, { key: normalizeRecordedKey(event.target.value) })
+                    }
                     placeholder="Key"
                     disabled={isMacroRecording}
                   />
@@ -135,7 +144,9 @@ export default function KeyboardRecorder({
                       value={step.delay}
                       min={0}
                       step={1}
-                      onChange={(event) => onUpdateManualStep(index, { delay: Number(event.target.value) || 0 })}
+                      onChange={(event) =>
+                        onUpdateManualStep(index, { delay: Number(event.target.value) || 0 })
+                      }
                       disabled={isMacroRecording}
                     />
                     <span className="interval-unit">ms</span>

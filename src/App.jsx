@@ -398,7 +398,8 @@ function App() {
 
   const startMacroPlayback = useCallback(async () => {
     if (!window.electronAPI?.startMacroPlayback) return;
-    const eventsForPlayback = playbackSource === 'manual' ? manualMacroEvents : macroEventsRef.current;
+    const eventsForPlayback =
+      playbackSource === 'manual' ? manualMacroEvents : macroEventsRef.current;
     if (eventsForPlayback.length === 0) {
       setMacroError('No macro data in selected source');
       return;
@@ -734,7 +735,9 @@ function App() {
           playbackHotkeyInput={playbackHotkeyInput}
           onClickerHotkeyInputChange={(value) => setClickerHotkeyInput(normalizeHotkeyInput(value))}
           onRecordHotkeyInputChange={(value) => setRecordHotkeyInput(normalizeHotkeyInput(value))}
-          onPlaybackHotkeyInputChange={(value) => setPlaybackHotkeyInput(normalizeHotkeyInput(value))}
+          onPlaybackHotkeyInputChange={(value) =>
+            setPlaybackHotkeyInput(normalizeHotkeyInput(value))
+          }
           onApplyHotkeys={applyMacroHotkeys}
           clickerHotkey={clickerHotkey}
           recordHotkey={recordHotkey}
