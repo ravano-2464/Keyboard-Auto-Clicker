@@ -202,6 +202,12 @@ function simulateKeyPress(key) {
   }
 }
 
+function syncFloatingMode() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  const shouldFloat = !mainWindow.isMaximized() && !mainWindow.isFullScreen();
+  mainWindow.setAlwaysOnTop(shouldFloat);
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 520,
@@ -231,6 +237,14 @@ function createWindow() {
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
+
+  mainWindow.on('maximize', syncFloatingMode);
+  mainWindow.on('unmaximize', syncFloatingMode);
+  mainWindow.on('enter-full-screen', syncFloatingMode);
+  mainWindow.on('leave-full-screen', syncFloatingMode);
+  mainWindow.on('restore', syncFloatingMode);
+
+  syncFloatingMode();
 }
 
 async function startClicker(key, intervalMs) {
@@ -355,6 +369,7 @@ ipcMain.handle('window-maximize', () => {
     } else {
       mainWindow.maximize();
     }
+    syncFloatingMode();
   }
 });
 
