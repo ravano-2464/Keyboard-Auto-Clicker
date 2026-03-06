@@ -558,6 +558,87 @@
   font-size: var(--font-size-xs);
 }
 
+.macro-source-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.macro-editor-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.macro-editor-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.macro-editor-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.macro-step-empty {
+  border: 1px dashed var(--border-primary);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  color: var(--text-tertiary);
+  font-size: var(--font-size-xs);
+}
+
+.macro-step-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.macro-step-row {
+  display: grid;
+  grid-template-columns: 30px minmax(80px, 1fr) minmax(110px, 140px) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.macro-step-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-primary);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.macro-step-key-input {
+  font-size: var(--font-size-sm);
+  padding: 8px 10px;
+  padding-right: 10px;
+  text-transform: uppercase;
+}
+
+.macro-step-delay-wrapper {
+  max-width: 140px;
+}
+
+.macro-step-delay-input {
+  font-size: var(--font-size-sm);
+  padding: 8px 10px;
+  padding-right: 30px;
+}
+
+.macro-step-remove-btn {
+  white-space: nowrap;
+}
+
 .macro-speed-section {
   display: flex;
   flex-direction: column;
@@ -595,7 +676,7 @@
 
 .macro-hotkey-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -634,6 +715,18 @@
 }
 
 @media (max-width: 540px) {
+  .macro-step-row {
+    grid-template-columns: 30px 1fr;
+  }
+
+  .macro-step-delay-wrapper {
+    max-width: none;
+  }
+
+  .macro-step-remove-btn {
+    grid-column: span 2;
+  }
+
   .macro-hotkey-grid {
     grid-template-columns: 1fr;
   }

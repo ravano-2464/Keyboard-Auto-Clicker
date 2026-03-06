@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Play, Square, Save, Trash2 } from 'lucide-react';
+import { Play, Square } from 'lucide-react';
 import './components/styles/colors.css';
 import './components/styles/typography.css';
 import './App.css';
@@ -8,9 +8,11 @@ import StatusOrb from './components/StatusOrb';
 import KeySelector from './components/KeySelector';
 import IntervalSettings from './components/IntervalSettings';
 import RepeatMode from './components/RepeatMode';
+import KeyboardRecorder from './components/KeyboardRecorder';
 import StatsBar from './components/StatsBar';
 
 const THEME_STORAGE_KEY = 'kac-theme';
+const DEFAULT_CLICKER_HOTKEY = 'F6';
 const DEFAULT_RECORD_HOTKEY = 'F7';
 const DEFAULT_PLAYBACK_HOTKEY = 'F8';
 const SPEED_PRESETS = [0.5, 1, 2, 100];
@@ -27,6 +29,19 @@ function getInitialTheme() {
 function normalizeRecordedKey(rawKey) {
   if (!rawKey) return '';
   if (rawKey === ' ') return 'Space';
+  const lower = rawKey.toLowerCase();
+  const keyAliases = {
+    spacebar: 'Space',
+    esc: 'Escape',
+    return: 'Enter',
+    del: 'Delete',
+  };
+  if (keyAliases[lower]) return keyAliases[lower];
+  if (lower.startsWith('arrow')) {
+    const direction = lower.slice(5);
+    return `Arrow${direction.charAt(0).toUpperCase()}${direction.slice(1)}`;
+  }
+  if (/^f\d{1,2}$/i.test(rawKey)) return rawKey.toUpperCase();
   if (rawKey.length === 1) return rawKey.toUpperCase();
   return rawKey;
 }
@@ -43,6 +58,31 @@ function getHotkeyMainKey(hotkey) {
     .filter(Boolean);
   if (parts.length === 0) return '';
   return parts[parts.length - 1].toLowerCase();
+}
+
+function eventsToSteps(events) {
+  let prevTime = 0;
+  return events.map((event, index) => {
+    const delay = index === 0 ? event.time : event.time - prevTime;
+    prevTime = event.time;
+    return {
+      key: event.key,
+      delay: Math.max(0, Math.round(delay)),
+    };
+  });
+}
+
+function stepsToEvents(steps) {
+  let elapsed = 0;
+  const normalized = [];
+  steps.forEach((step) => {
+    const key = normalizeRecordedKey((step.key || '').trim());
+    if (!key) return;
+    const delay = Math.max(0, Math.round(Number(step.delay) || 0));
+    elapsed += delay;
+    normalized.push({ key, time: elapsed });
+  });
+  return normalized;
 }
 
 function formatMacroDuration(ms) {
@@ -113,11 +153,15 @@ function App() {
   const [macroRecordingElapsed, setMacroRecordingElapsed] = useState(0);
   const [isMacroPlaying, setIsMacroPlaying] = useState(false);
   const [continuousPlayback, setContinuousPlayback] = useState(false);
+  const [macroSteps, setMacroSteps] = useState([]);
+  const [playbackSource, setPlaybackSource] = useState('recorded');
   const [selectedSpeedPreset, setSelectedSpeedPreset] = useState(1);
   const [useCustomSpeed, setUseCustomSpeed] = useState(false);
   const [customSpeed, setCustomSpeed] = useState('1');
+  const [clickerHotkey, setClickerHotkey] = useState(DEFAULT_CLICKER_HOTKEY);
   const [recordHotkey, setRecordHotkey] = useState(DEFAULT_RECORD_HOTKEY);
   const [playbackHotkey, setPlaybackHotkey] = useState(DEFAULT_PLAYBACK_HOTKEY);
+  const [clickerHotkeyInput, setClickerHotkeyInput] = useState(DEFAULT_CLICKER_HOTKEY);
   const [recordHotkeyInput, setRecordHotkeyInput] = useState(DEFAULT_RECORD_HOTKEY);
   const [playbackHotkeyInput, setPlaybackHotkeyInput] = useState(DEFAULT_PLAYBACK_HOTKEY);
 
@@ -140,6 +184,16 @@ function App() {
     if (!Number.isFinite(value) || value <= 0) return 1;
     return value;
   }, [useCustomSpeed, customSpeed, selectedSpeedPreset]);
+
+  const manualMacroEvents = useMemo(() => stepsToEvents(macroSteps), [macroSteps]);
+  const activeMacroEvents = useMemo(
+    () => (playbackSource === 'manual' ? manualMacroEvents : macroEvents),
+    [playbackSource, manualMacroEvents, macroEvents]
+  );
+  const activeMacroDuration = useMemo(
+    () => activeMacroEvents[activeMacroEvents.length - 1]?.time || 0,
+    [activeMacroEvents]
+  );
 
   useEffect(() => {
     repeatModeRef.current = repeatMode;
@@ -224,6 +278,20 @@ function App() {
     await window.electronAPI.saveMacroRecording(events);
   }, []);
 
+  const syncMacroFromSteps = useCallback(
+    (nextSteps, persist = true) => {
+      setMacroSteps(nextSteps);
+      setPlaybackSource('manual');
+      const events = stepsToEvents(nextSteps);
+      if (persist) {
+        pushMacroToMain(events).catch((error) => {
+          console.error('[Macro] Failed to save manual steps:', error);
+        });
+      }
+    },
+    [pushMacroToMain]
+  );
+
   const stopClicker = useCallback(async () => {
     if (window.electronAPI) {
       await window.electronAPI.stopClicker();
@@ -287,6 +355,7 @@ function App() {
     setMacroEvents([]);
     macroEventsRef.current = [];
     setMacroRecordingElapsed(0);
+    setPlaybackSource('recorded');
     macroStartTimeRef.current = performance.now();
     setIsMacroRecording(true);
   }, []);
@@ -296,6 +365,7 @@ function App() {
     const finalEvents = macroEventsRef.current;
     const lastTime = finalEvents[finalEvents.length - 1]?.time || 0;
     setMacroRecordingElapsed(lastTime);
+    setPlaybackSource('recorded');
     await pushMacroToMain(finalEvents);
   }, [pushMacroToMain]);
 
@@ -308,17 +378,33 @@ function App() {
   }, [startMacroRecording, stopMacroRecording]);
 
   const clearMacroRecording = useCallback(async () => {
+    if (window.electronAPI?.stopMacroPlayback) {
+      await window.electronAPI.stopMacroPlayback();
+    }
     setIsMacroRecording(false);
+    setIsMacroPlaying(false);
     setMacroEvents([]);
+    setMacroSteps([]);
     macroEventsRef.current = [];
     setMacroRecordingElapsed(0);
+    setMacroError('');
+    setPlaybackSource('recorded');
+    setContinuousPlayback(false);
+    setUseCustomSpeed(false);
+    setSelectedSpeedPreset(1);
+    setCustomSpeed('1');
     await pushMacroToMain([]);
   }, [pushMacroToMain]);
 
   const startMacroPlayback = useCallback(async () => {
     if (!window.electronAPI?.startMacroPlayback) return;
+    const eventsForPlayback = playbackSource === 'manual' ? manualMacroEvents : macroEventsRef.current;
+    if (eventsForPlayback.length === 0) {
+      setMacroError('No macro data in selected source');
+      return;
+    }
     const result = await window.electronAPI.startMacroPlayback({
-      events: macroEventsRef.current,
+      events: eventsForPlayback,
       speed: playbackSpeed,
       continuous: continuousPlayback,
     });
@@ -328,7 +414,7 @@ function App() {
     }
     setMacroError('');
     setIsMacroPlaying(Boolean(result.playing));
-  }, [playbackSpeed, continuousPlayback]);
+  }, [playbackSpeed, continuousPlayback, playbackSource, manualMacroEvents]);
 
   const stopMacroPlayback = useCallback(async () => {
     if (!window.electronAPI?.stopMacroPlayback) return;
@@ -344,11 +430,47 @@ function App() {
     }
   }, [isMacroPlaying, startMacroPlayback, stopMacroPlayback]);
 
+  const addMacroStep = useCallback(() => {
+    const nextSteps = [...macroSteps, { key: 'A', delay: 100 }];
+    syncMacroFromSteps(nextSteps, true);
+  }, [macroSteps, syncMacroFromSteps]);
+
+  const updateMacroStep = useCallback(
+    (index, patch) => {
+      const nextSteps = macroSteps.map((step, currentIndex) =>
+        currentIndex === index ? { ...step, ...patch } : step
+      );
+      syncMacroFromSteps(nextSteps, true);
+    },
+    [macroSteps, syncMacroFromSteps]
+  );
+
+  const removeMacroStep = useCallback(
+    (index) => {
+      const nextSteps = macroSteps.filter((_, currentIndex) => currentIndex !== index);
+      syncMacroFromSteps(nextSteps, true);
+    },
+    [macroSteps, syncMacroFromSteps]
+  );
+
+  const saveManualMacro = useCallback(async () => {
+    setMacroError('');
+    const events = stepsToEvents(macroSteps);
+    if (events.length === 0) {
+      setMacroError('Manual macro is empty');
+      return;
+    }
+    setPlaybackSource('manual');
+    await pushMacroToMain(events);
+  }, [macroSteps, pushMacroToMain]);
+
   const applyMacroHotkeys = useCallback(async () => {
     if (!window.electronAPI?.updateMacroSettings) return;
+    const nextClickerHotkey = normalizeHotkeyInput(clickerHotkeyInput || DEFAULT_CLICKER_HOTKEY);
     const nextRecordHotkey = normalizeHotkeyInput(recordHotkeyInput || DEFAULT_RECORD_HOTKEY);
     const nextPlaybackHotkey = normalizeHotkeyInput(playbackHotkeyInput || DEFAULT_PLAYBACK_HOTKEY);
     const result = await window.electronAPI.updateMacroSettings({
+      clickerHotkey: nextClickerHotkey,
       recordHotkey: nextRecordHotkey,
       playbackHotkey: nextPlaybackHotkey,
     });
@@ -359,11 +481,13 @@ function App() {
     }
 
     setMacroError('');
+    setClickerHotkey(result.settings.clickerHotkey);
+    setClickerHotkeyInput(result.settings.clickerHotkey);
     setRecordHotkey(result.settings.recordHotkey);
     setPlaybackHotkey(result.settings.playbackHotkey);
     setRecordHotkeyInput(result.settings.recordHotkey);
     setPlaybackHotkeyInput(result.settings.playbackHotkey);
-  }, [recordHotkeyInput, playbackHotkeyInput]);
+  }, [clickerHotkeyInput, recordHotkeyInput, playbackHotkeyInput]);
 
   const toggleTheme = useCallback(() => {
     setTheme((prevTheme) => (prevTheme === 'dark' ? 'light' : 'dark'));
@@ -372,6 +496,7 @@ function App() {
   useEffect(() => {
     if (!isMacroRecording) return;
 
+    const clickerHotkeyMain = getHotkeyMainKey(clickerHotkey);
     const recordHotkeyMain = getHotkeyMainKey(recordHotkey);
     const playbackHotkeyMain = getHotkeyMainKey(playbackHotkey);
 
@@ -379,7 +504,11 @@ function App() {
       if (event.repeat) return;
 
       const currentKey = event.key.toLowerCase();
-      if (currentKey === recordHotkeyMain || currentKey === playbackHotkeyMain) {
+      if (
+        currentKey === clickerHotkeyMain ||
+        currentKey === recordHotkeyMain ||
+        currentKey === playbackHotkeyMain
+      ) {
         return;
       }
 
@@ -395,7 +524,7 @@ function App() {
 
     window.addEventListener('keydown', handleMacroRecord, true);
     return () => window.removeEventListener('keydown', handleMacroRecord, true);
-  }, [isMacroRecording, recordHotkey, playbackHotkey]);
+  }, [isMacroRecording, clickerHotkey, recordHotkey, playbackHotkey]);
 
   useEffect(() => {
     if (window.electronAPI?.updateSettings) {
@@ -427,6 +556,8 @@ function App() {
         if (statusResult) {
           setIsMacroPlaying(Boolean(statusResult.playing));
           setContinuousPlayback(Boolean(statusResult.continuous));
+          setClickerHotkey(statusResult.clickerHotkey || DEFAULT_CLICKER_HOTKEY);
+          setClickerHotkeyInput(statusResult.clickerHotkey || DEFAULT_CLICKER_HOTKEY);
           setRecordHotkey(statusResult.recordHotkey || DEFAULT_RECORD_HOTKEY);
           setPlaybackHotkey(statusResult.playbackHotkey || DEFAULT_PLAYBACK_HOTKEY);
           setRecordHotkeyInput(statusResult.recordHotkey || DEFAULT_RECORD_HOTKEY);
@@ -437,8 +568,10 @@ function App() {
         if (recordingResult?.success && Array.isArray(recordingResult.events)) {
           setMacroEvents(recordingResult.events);
           macroEventsRef.current = recordingResult.events;
+          setMacroSteps(eventsToSteps(recordingResult.events));
           const lastTime = recordingResult.events[recordingResult.events.length - 1]?.time || 0;
           setMacroRecordingElapsed(lastTime);
+          setPlaybackSource('recorded');
         }
       } catch (error) {
         if (!unmounted) {
@@ -456,6 +589,10 @@ function App() {
       }
       if (typeof status?.continuous === 'boolean') {
         setContinuousPlayback(status.continuous);
+      }
+      if (status?.clickerHotkey) {
+        setClickerHotkey(status.clickerHotkey);
+        setClickerHotkeyInput(status.clickerHotkey);
       }
       if (status?.recordHotkey) {
         setRecordHotkey(status.recordHotkey);
@@ -489,15 +626,16 @@ function App() {
 
   useEffect(() => {
     if (window.electronAPI) return;
+    const clickerHotkeyMain = getHotkeyMainKey(clickerHotkey);
     const handleKeyDown = (event) => {
-      if (event.key === 'F6') {
+      if (event.key.toLowerCase() === clickerHotkeyMain) {
         event.preventDefault();
         toggleClicker();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [toggleClicker]);
+  }, [toggleClicker, clickerHotkey]);
 
   useEffect(() => {
     if (window.electronAPI) {
@@ -530,7 +668,7 @@ function App() {
     }
   }, []);
 
-  const canStartMacroPlayback = macroEvents.length > 0 || isMacroPlaying;
+  const canStartMacroPlayback = activeMacroEvents.length > 0 || isMacroPlaying;
   const recordingLabel = isMacroRecording ? 'Stop Recording' : 'Start Recording';
   const playbackLabel = isMacroPlaying ? 'Stop Playback' : 'Start Playback';
 
@@ -557,139 +695,52 @@ function App() {
           disabled={isRunning}
         />
 
-        <div className="settings-card">
-          <div className="card-header">
-            <div className="card-icon">
-              <Save size={18} />
-            </div>
-            <div>
-              <div className="card-title">Keyboard Recorder</div>
-              <div className="card-subtitle">
-                Record keystrokes, set playback speed, and run continuous loop
-              </div>
-            </div>
-          </div>
-
-          <div className="macro-panel">
-            <div className="macro-actions-row">
-              <button
-                className={`preset-btn ${isMacroRecording ? 'active' : ''}`}
-                onClick={toggleMacroRecording}
-              >
-                {recordingLabel}
-              </button>
-              <button
-                className="preset-btn"
-                onClick={clearMacroRecording}
-                disabled={isMacroRecording}
-              >
-                <Trash2 size={12} />
-                Clear
-              </button>
-              <button
-                className={`preset-btn ${isMacroPlaying ? 'active' : ''}`}
-                onClick={toggleMacroPlayback}
-                disabled={!canStartMacroPlayback}
-              >
-                {playbackLabel}
-              </button>
-            </div>
-
-            <div className="macro-meta">
-              <span>Recorded Keys: {macroEvents.length}</span>
-              <span>Duration: {formatMacroDuration(macroRecordingElapsed)}</span>
-            </div>
-
-            <div className="macro-speed-section">
-              <div className="key-preset-label">Playback Speed</div>
-              <div className="interval-presets">
-                {SPEED_PRESETS.map((speed) => (
-                  <button
-                    key={speed}
-                    className={`preset-btn ${!useCustomSpeed && selectedSpeedPreset === speed ? 'active' : ''}`}
-                    onClick={() => {
-                      setUseCustomSpeed(false);
-                      setSelectedSpeedPreset(speed);
-                      setCustomSpeed(String(speed));
-                    }}
-                  >
-                    {speed}x
-                  </button>
-                ))}
-              </div>
-
-              <div className="macro-custom-speed-row">
-                <label className="macro-checkbox">
-                  <input
-                    type="checkbox"
-                    checked={useCustomSpeed}
-                    onChange={(event) => setUseCustomSpeed(event.target.checked)}
-                  />
-                  Custom speed
-                </label>
-                <div className="interval-input-wrapper macro-speed-input-wrapper">
-                  <input
-                    type="number"
-                    className="interval-input macro-speed-input"
-                    value={customSpeed}
-                    onChange={(event) => setCustomSpeed(event.target.value)}
-                    min={0.01}
-                    step={0.01}
-                    disabled={!useCustomSpeed}
-                  />
-                  <span className="interval-unit">x</span>
-                </div>
-              </div>
-
-              <label className="macro-checkbox">
-                <input
-                  type="checkbox"
-                  checked={continuousPlayback}
-                  onChange={(event) => setContinuousPlayback(event.target.checked)}
-                />
-                Continuous playback
-              </label>
-            </div>
-
-            <div className="macro-hotkey-grid">
-              <div className="macro-hotkey-field">
-                <div className="key-preset-label">Record Hotkey</div>
-                <input
-                  type="text"
-                  className="interval-input macro-hotkey-input"
-                  value={recordHotkeyInput}
-                  onChange={(event) =>
-                    setRecordHotkeyInput(normalizeHotkeyInput(event.target.value))
-                  }
-                  placeholder="F7 or CTRL+SHIFT+R"
-                />
-              </div>
-              <div className="macro-hotkey-field">
-                <div className="key-preset-label">Playback Hotkey</div>
-                <input
-                  type="text"
-                  className="interval-input macro-hotkey-input"
-                  value={playbackHotkeyInput}
-                  onChange={(event) =>
-                    setPlaybackHotkeyInput(normalizeHotkeyInput(event.target.value))
-                  }
-                  placeholder="F8 or CTRL+SHIFT+P"
-                />
-              </div>
-            </div>
-
-            <div className="macro-hotkey-actions">
-              <button className="preset-btn" onClick={applyMacroHotkeys}>
-                Apply Hotkeys
-              </button>
-              <div className="macro-hotkey-active">
-                Active: REC {recordHotkey} | PLAY {playbackHotkey}
-              </div>
-            </div>
-
-            {macroError && <div className="macro-error">{macroError}</div>}
-          </div>
-        </div>
+        <KeyboardRecorder
+          isMacroRecording={isMacroRecording}
+          isMacroPlaying={isMacroPlaying}
+          recordingLabel={recordingLabel}
+          playbackLabel={playbackLabel}
+          canStartPlayback={canStartMacroPlayback}
+          onToggleRecording={toggleMacroRecording}
+          onClearRecording={clearMacroRecording}
+          onTogglePlayback={toggleMacroPlayback}
+          playbackSource={playbackSource}
+          onPlaybackSourceChange={setPlaybackSource}
+          recordedEventsCount={macroEvents.length}
+          manualSteps={macroSteps}
+          activeStepsCount={activeMacroEvents.length}
+          activeDurationLabel={formatMacroDuration(activeMacroDuration)}
+          recordingDurationLabel={formatMacroDuration(macroRecordingElapsed)}
+          onAddManualStep={addMacroStep}
+          onSaveManualMacro={saveManualMacro}
+          onUpdateManualStep={updateMacroStep}
+          onRemoveManualStep={removeMacroStep}
+          normalizeRecordedKey={normalizeRecordedKey}
+          speedPresets={SPEED_PRESETS}
+          useCustomSpeed={useCustomSpeed}
+          selectedSpeedPreset={selectedSpeedPreset}
+          onSelectSpeedPreset={(speed) => {
+            setUseCustomSpeed(false);
+            setSelectedSpeedPreset(speed);
+            setCustomSpeed(String(speed));
+          }}
+          onToggleUseCustomSpeed={setUseCustomSpeed}
+          customSpeed={customSpeed}
+          onCustomSpeedChange={setCustomSpeed}
+          continuousPlayback={continuousPlayback}
+          onContinuousPlaybackChange={setContinuousPlayback}
+          clickerHotkeyInput={clickerHotkeyInput}
+          recordHotkeyInput={recordHotkeyInput}
+          playbackHotkeyInput={playbackHotkeyInput}
+          onClickerHotkeyInputChange={(value) => setClickerHotkeyInput(normalizeHotkeyInput(value))}
+          onRecordHotkeyInputChange={(value) => setRecordHotkeyInput(normalizeHotkeyInput(value))}
+          onPlaybackHotkeyInputChange={(value) => setPlaybackHotkeyInput(normalizeHotkeyInput(value))}
+          onApplyHotkeys={applyMacroHotkeys}
+          clickerHotkey={clickerHotkey}
+          recordHotkey={recordHotkey}
+          playbackHotkey={playbackHotkey}
+          macroError={macroError}
+        />
 
         <div className="action-section">
           <button className={`action-btn ${isRunning ? 'stop' : 'start'}`} onClick={toggleClicker}>

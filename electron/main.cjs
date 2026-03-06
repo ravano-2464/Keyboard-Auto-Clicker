@@ -18,6 +18,7 @@ let macroRecording = [];
 let isMacroPlaying = false;
 let macroPlaybackSpeed = 1;
 let macroContinuousPlayback = false;
+let clickerHotkey = 'F6';
 let recordHotkey = 'F7';
 let playbackHotkey = 'F8';
 const macroPlaybackTimers = new Set();
@@ -223,6 +224,7 @@ function sendMacroPlaybackStatus() {
       count: macroRecording.length,
       speed: macroPlaybackSpeed,
       continuous: macroContinuousPlayback,
+      clickerHotkey,
       recordHotkey,
       playbackHotkey,
     });
@@ -349,7 +351,7 @@ function registerGlobalHotkeys() {
   };
 
   if (
-    !registerSafe('F6', () => {
+    !registerSafe(clickerHotkey, () => {
       if (isRunning) {
         stopClicker();
       } else {
@@ -357,7 +359,7 @@ function registerGlobalHotkeys() {
       }
     })
   ) {
-    failedHotkeys.push('F6');
+    failedHotkeys.push(clickerHotkey);
   }
 
   if (
@@ -395,9 +397,13 @@ function registerGlobalHotkeys() {
 }
 
 function updateMacroSettings(settings = {}) {
+  const prevClickerHotkey = clickerHotkey;
   const prevRecordHotkey = recordHotkey;
   const prevPlaybackHotkey = playbackHotkey;
 
+  if (typeof settings.clickerHotkey === 'string' && settings.clickerHotkey.trim()) {
+    clickerHotkey = settings.clickerHotkey.trim();
+  }
   if (typeof settings.recordHotkey === 'string' && settings.recordHotkey.trim()) {
     recordHotkey = settings.recordHotkey.trim();
   }
@@ -417,6 +423,7 @@ function updateMacroSettings(settings = {}) {
 
   const registerResult = registerGlobalHotkeys();
   if (!registerResult.success) {
+    clickerHotkey = prevClickerHotkey;
     recordHotkey = prevRecordHotkey;
     playbackHotkey = prevPlaybackHotkey;
     registerGlobalHotkeys();
@@ -426,6 +433,7 @@ function updateMacroSettings(settings = {}) {
   return {
     success: true,
     settings: {
+      clickerHotkey,
       recordHotkey,
       playbackHotkey,
       speed: macroPlaybackSpeed,
@@ -609,6 +617,7 @@ ipcMain.handle('get-macro-status', () => {
     count: macroRecording.length,
     speed: macroPlaybackSpeed,
     continuous: macroContinuousPlayback,
+    clickerHotkey,
     recordHotkey,
     playbackHotkey,
   };

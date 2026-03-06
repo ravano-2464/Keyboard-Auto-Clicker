@@ -47,6 +47,7 @@ Keyboard Auto Clicker/
 │   │   └── typography.css    # Typography
 │   ├── components/
 │   │   ├── TitleBar.jsx      # Custom frameless titlebar
+│   │   ├── KeyboardRecorder.jsx    # Keyboard shortcut recorder
 │   │   ├── StatusOrb.jsx     # Animated status indicator (idle/running)
 │   │   ├── KeySelector.jsx   # Key selection + real-time key detection
 │   │   ├── IntervalSettings.jsx  # Interval control + preset buttons
