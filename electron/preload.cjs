@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   minimize: () => ipcRenderer.invoke('window-minimize'),
   maximize: () => ipcRenderer.invoke('window-maximize'),
   close: () => ipcRenderer.invoke('window-close'),
+  getWindowState: () => ipcRenderer.invoke('get-window-state'),
 
   onClickerStatus: (callback) => {
     const handler = (event, data) => callback(data);
@@ -50,5 +51,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     const handler = (event, error) => callback(error);
     ipcRenderer.on('macro-error', handler);
     return () => ipcRenderer.removeListener('macro-error', handler);
+  },
+  onWindowStateChange: (callback) => {
+    const handler = (event, state) => callback(state);
+    ipcRenderer.on('window-state-changed', handler);
+    return () => ipcRenderer.removeListener('window-state-changed', handler);
   },
 });

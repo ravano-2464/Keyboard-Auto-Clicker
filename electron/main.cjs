@@ -448,6 +448,14 @@ function syncFloatingMode() {
   mainWindow.setAlwaysOnTop(shouldFloat);
 }
 
+function sendWindowState() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  mainWindow.webContents.send('window-state-changed', {
+    isMaximized: mainWindow.isMaximized(),
+    isFullScreen: mainWindow.isFullScreen(),
+  });
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 520,
@@ -478,11 +486,18 @@ function createWindow() {
     mainWindow = null;
   });
 
-  mainWindow.on('maximize', syncFloatingMode);
-  mainWindow.on('unmaximize', syncFloatingMode);
-  mainWindow.on('enter-full-screen', syncFloatingMode);
-  mainWindow.on('leave-full-screen', syncFloatingMode);
-  mainWindow.on('restore', syncFloatingMode);
+  const syncWindowState = () => {
+    syncFloatingMode();
+    sendWindowState();
+  };
+
+  mainWindow.on('maximize', syncWindowState);
+  mainWindow.on('unmaximize', syncWindowState);
+  mainWindow.on('enter-full-screen', syncWindowState);
+  mainWindow.on('leave-full-screen', syncWindowState);
+  mainWindow.on('restore', syncWindowState);
+  mainWindow.on('resize', sendWindowState);
+  mainWindow.webContents.on('did-finish-load', sendWindowState);
 
   syncFloatingMode();
 }
@@ -639,9 +654,20 @@ ipcMain.handle('window-maximize', () => {
       mainWindow.maximize();
     }
     syncFloatingMode();
+    sendWindowState();
   }
 });
 
 ipcMain.handle('window-close', () => {
   if (mainWindow) mainWindow.close();
+});
+
+ipcMain.handle('get-window-state', () => {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    return { isMaximized: false, isFullScreen: false };
+  }
+  return {
+    isMaximized: mainWindow.isMaximized(),
+    isFullScreen: mainWindow.isFullScreen(),
+  };
 });

@@ -716,15 +716,22 @@
 
 @media (max-width: 540px) {
   .macro-step-row {
-    grid-template-columns: 30px 1fr;
+    grid-template-columns: 30px minmax(0, 1fr);
+  }
+
+  .macro-step-key-input {
+    grid-column: 2;
   }
 
   .macro-step-delay-wrapper {
+    grid-column: 2;
     max-width: none;
+    min-width: 0;
   }
 
   .macro-step-remove-btn {
-    grid-column: span 2;
+    grid-column: 2;
+    justify-self: start;
   }
 
   .macro-hotkey-grid {
