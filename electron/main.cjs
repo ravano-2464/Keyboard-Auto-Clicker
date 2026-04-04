@@ -22,6 +22,33 @@ let clickerHotkey = 'F6';
 let recordHotkey = 'F7';
 let playbackHotkey = 'F8';
 const macroPlaybackTimers = new Set();
+const ELECTRON_HOTKEY_MODIFIER_MAP = {
+  Ctrl: 'Control',
+  Alt: 'Alt',
+  Shift: 'Shift',
+  Super: 'Super',
+};
+const ELECTRON_HOTKEY_KEY_MAP = {
+  Space: 'Space',
+  Enter: 'Enter',
+  Tab: 'Tab',
+  Escape: 'Esc',
+  Backspace: 'Backspace',
+  Delete: 'Delete',
+  Insert: 'Insert',
+  Home: 'Home',
+  End: 'End',
+  PageUp: 'PageUp',
+  PageDown: 'PageDown',
+  Up: 'Up',
+  Down: 'Down',
+  Left: 'Left',
+  Right: 'Right',
+  CapsLock: 'Capslock',
+  NumLock: 'Numlock',
+  ScrollLock: 'Scrolllock',
+  PrintScreen: 'PrintScreen',
+};
 
 function waitForPsReady(timeoutMs = 10000) {
   if (psReady) return Promise.resolve(true);
@@ -42,6 +69,29 @@ function waitForPsReady(timeoutMs = 10000) {
 function resolvePsReadyWaiters(isReady) {
   psReadyResolvers.forEach((resolver) => resolver(isReady));
   psReadyResolvers = [];
+}
+
+function toElectronAccelerator(hotkey) {
+  if (typeof hotkey !== 'string') return '';
+
+  const parts = hotkey
+    .split('+')
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  if (parts.length === 0) return '';
+
+  return parts
+    .map((part) => {
+      if (ELECTRON_HOTKEY_MODIFIER_MAP[part]) {
+        return ELECTRON_HOTKEY_MODIFIER_MAP[part];
+      }
+      if (ELECTRON_HOTKEY_KEY_MAP[part]) {
+        return ELECTRON_HOTKEY_KEY_MAP[part];
+      }
+      return part;
+    })
+    .join('+');
 }
 
 let scriptPath = null;
@@ -573,11 +623,15 @@ function registerGlobalHotkeys() {
   globalShortcut.unregisterAll();
 
   const failedHotkeys = [];
-  const registerSafe = (accelerator, handler) => {
+  const registerSafe = (hotkey, handler) => {
+    const accelerator = toElectronAccelerator(hotkey);
     try {
+      if (!accelerator) {
+        return false;
+      }
       return globalShortcut.register(accelerator, handler);
     } catch (error) {
-      console.error('[Hotkey] Failed to register:', accelerator, error.message);
+      console.error('[Hotkey] Failed to register:', hotkey, '=>', accelerator, error.message);
       return false;
     }
   };

@@ -59,9 +59,9 @@ function App() {
     clickerHotkeyInput,
     recordHotkeyInput,
     playbackHotkeyInput,
-    onClickerHotkeyInputChange,
-    onRecordHotkeyInputChange,
-    onPlaybackHotkeyInputChange,
+    hotkeyCaptureTarget,
+    beginHotkeyCapture,
+    cancelHotkeyCapture,
     applyMacroHotkeys,
     clickerHotkey,
     recordHotkey,
@@ -125,9 +125,9 @@ function App() {
           clickerHotkeyInput={clickerHotkeyInput}
           recordHotkeyInput={recordHotkeyInput}
           playbackHotkeyInput={playbackHotkeyInput}
-          onClickerHotkeyInputChange={onClickerHotkeyInputChange}
-          onRecordHotkeyInputChange={onRecordHotkeyInputChange}
-          onPlaybackHotkeyInputChange={onPlaybackHotkeyInputChange}
+          hotkeyCaptureTarget={hotkeyCaptureTarget}
+          onBeginHotkeyCapture={beginHotkeyCapture}
+          onCancelHotkeyCapture={cancelHotkeyCapture}
           onApplyHotkeys={applyMacroHotkeys}
           clickerHotkey={clickerHotkey}
           recordHotkey={recordHotkey}

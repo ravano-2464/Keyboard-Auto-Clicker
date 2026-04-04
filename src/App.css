@@ -826,10 +826,80 @@
   gap: 6px;
 }
 
-.macro-hotkey-input {
-  font-size: var(--font-size-sm);
-  padding: 10px 12px;
-  padding-right: 12px;
+.macro-hotkey-capture {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  min-height: 66px;
+  padding: 12px 14px;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  background:
+    linear-gradient(135deg, var(--bg-glass), transparent),
+    var(--bg-input);
+  color: var(--text-primary);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.25s ease,
+    background 0.25s ease,
+    box-shadow 0.25s ease,
+    transform 0.2s ease;
+}
+
+.macro-hotkey-capture:hover {
+  border-color: var(--border-glow);
+  background:
+    linear-gradient(135deg, var(--bg-accent-subtle), transparent),
+    var(--bg-input);
+}
+
+.macro-hotkey-capture:focus-visible {
+  outline: none;
+  border-color: var(--border-active);
+  box-shadow: 0 0 0 4px var(--accent-glow);
+}
+
+.macro-hotkey-capture:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.macro-hotkey-capture.listening {
+  border-color: var(--accent-primary);
+  background:
+    linear-gradient(135deg, var(--bg-accent-soft), transparent 75%),
+    var(--bg-input);
+  box-shadow: 0 0 0 1px var(--border-active), var(--shadow-glow);
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.macro-hotkey-capture-value {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  letter-spacing: var(--letter-spacing-tight);
+  word-break: break-word;
+}
+
+.macro-hotkey-capture.listening .macro-hotkey-capture-value {
+  color: var(--accent-secondary);
+}
+
+.macro-hotkey-capture-meta {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+}
+
+.macro-hotkey-hint {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  line-height: var(--line-height-snug);
 }
 
 .macro-hotkey-actions {

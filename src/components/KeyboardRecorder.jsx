@@ -33,15 +33,38 @@ export default function KeyboardRecorder({
   clickerHotkeyInput,
   recordHotkeyInput,
   playbackHotkeyInput,
-  onClickerHotkeyInputChange,
-  onRecordHotkeyInputChange,
-  onPlaybackHotkeyInputChange,
+  hotkeyCaptureTarget,
+  onBeginHotkeyCapture,
+  onCancelHotkeyCapture,
   onApplyHotkeys,
   clickerHotkey,
   recordHotkey,
   playbackHotkey,
   macroError,
 }) {
+  const renderHotkeyCapture = (target, label, value, placeholder) => {
+    const isListening = hotkeyCaptureTarget === target;
+
+    return (
+      <div className="macro-hotkey-field">
+        <div className="key-preset-label">{label}</div>
+        <button
+          type="button"
+          className={`macro-hotkey-capture ${isListening ? 'listening' : ''}`}
+          onClick={() => (isListening ? onCancelHotkeyCapture() : onBeginHotkeyCapture(target))}
+          disabled={isMacroRecording}
+        >
+          <span className="macro-hotkey-capture-value">
+            {isListening ? 'Press keys now...' : value || placeholder}
+          </span>
+          <span className="macro-hotkey-capture-meta">
+            {isListening ? 'Esc cancel • Del clear' : 'Click and press your hotkey'}
+          </span>
+        </button>
+      </div>
+    );
+  };
+
   return (
     <div className="settings-card">
       <div className="card-header">
@@ -218,36 +241,13 @@ export default function KeyboardRecorder({
         </div>
 
         <div className="macro-hotkey-grid">
-          <div className="macro-hotkey-field">
-            <div className="key-preset-label">Clicker Toggle Hotkey</div>
-            <input
-              type="text"
-              className="interval-input macro-hotkey-input"
-              value={clickerHotkeyInput}
-              onChange={(event) => onClickerHotkeyInputChange(event.target.value)}
-              placeholder="F6 or CTRL+SHIFT+C"
-            />
-          </div>
-          <div className="macro-hotkey-field">
-            <div className="key-preset-label">Record Hotkey</div>
-            <input
-              type="text"
-              className="interval-input macro-hotkey-input"
-              value={recordHotkeyInput}
-              onChange={(event) => onRecordHotkeyInputChange(event.target.value)}
-              placeholder="F7 or CTRL+SHIFT+R"
-            />
-          </div>
-          <div className="macro-hotkey-field">
-            <div className="key-preset-label">Playback Hotkey</div>
-            <input
-              type="text"
-              className="interval-input macro-hotkey-input"
-              value={playbackHotkeyInput}
-              onChange={(event) => onPlaybackHotkeyInputChange(event.target.value)}
-              placeholder="F8 or CTRL+SHIFT+P"
-            />
-          </div>
+          {renderHotkeyCapture('clicker', 'Clicker Toggle Hotkey', clickerHotkeyInput, 'F6')}
+          {renderHotkeyCapture('record', 'Record Hotkey', recordHotkeyInput, 'F7')}
+          {renderHotkeyCapture('playback', 'Playback Hotkey', playbackHotkeyInput, 'F8')}
+        </div>
+
+        <div className="macro-hotkey-hint">
+          Click one field, press the key or key combo you want, then click Apply Hotkeys.
         </div>
 
         <div className="macro-hotkey-actions">

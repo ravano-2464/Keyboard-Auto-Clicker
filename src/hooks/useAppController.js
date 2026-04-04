@@ -8,7 +8,8 @@ import {
   getInitialTheme,
   normalizeRecordedKey,
   normalizeHotkeyInput,
-  getHotkeyMainKey,
+  getHotkeyFromKeyboardEvent,
+  hotkeyMatchesKeyboardEvent,
   eventsToSteps,
   stepsToEvents,
   formatMacroDuration,
@@ -42,6 +43,7 @@ export function useAppController() {
   const [clickerHotkeyInput, setClickerHotkeyInput] = useState(DEFAULT_CLICKER_HOTKEY);
   const [recordHotkeyInput, setRecordHotkeyInput] = useState(DEFAULT_RECORD_HOTKEY);
   const [playbackHotkeyInput, setPlaybackHotkeyInput] = useState(DEFAULT_PLAYBACK_HOTKEY);
+  const [hotkeyCaptureTarget, setHotkeyCaptureTarget] = useState('');
 
   const clickCountRef = useRef(0);
   const startTimeRef = useRef(null);
@@ -343,6 +345,29 @@ export function useAppController() {
     await pushMacroToMain(events);
   }, [macroSteps, pushMacroToMain]);
 
+  const setHotkeyDraftValue = useCallback((target, value) => {
+    if (target === 'clicker') {
+      setClickerHotkeyInput(value);
+      return;
+    }
+    if (target === 'record') {
+      setRecordHotkeyInput(value);
+      return;
+    }
+    if (target === 'playback') {
+      setPlaybackHotkeyInput(value);
+    }
+  }, []);
+
+  const beginHotkeyCapture = useCallback((target) => {
+    setMacroError('');
+    setHotkeyCaptureTarget(target);
+  }, []);
+
+  const cancelHotkeyCapture = useCallback(() => {
+    setHotkeyCaptureTarget('');
+  }, []);
+
   const applyMacroHotkeys = useCallback(async () => {
     if (!window.electronAPI?.updateMacroSettings) return;
     const nextClickerHotkey = normalizeHotkeyInput(clickerHotkeyInput || DEFAULT_CLICKER_HOTKEY);
@@ -366,6 +391,7 @@ export function useAppController() {
     setPlaybackHotkey(result.settings.playbackHotkey);
     setRecordHotkeyInput(result.settings.recordHotkey);
     setPlaybackHotkeyInput(result.settings.playbackHotkey);
+    setHotkeyCaptureTarget('');
   }, [clickerHotkeyInput, recordHotkeyInput, playbackHotkeyInput]);
 
   const toggleTheme = useCallback(() => {
@@ -378,33 +404,50 @@ export function useAppController() {
     setCustomSpeed(String(speed));
   }, []);
 
-  const onClickerHotkeyInputChange = useCallback((value) => {
-    setClickerHotkeyInput(normalizeHotkeyInput(value));
-  }, []);
+  useEffect(() => {
+    if (!hotkeyCaptureTarget) return;
 
-  const onRecordHotkeyInputChange = useCallback((value) => {
-    setRecordHotkeyInput(normalizeHotkeyInput(value));
-  }, []);
+    const handleHotkeyCapture = (event) => {
+      if (event.repeat) return;
 
-  const onPlaybackHotkeyInputChange = useCallback((value) => {
-    setPlaybackHotkeyInput(normalizeHotkeyInput(value));
-  }, []);
+      event.preventDefault();
+      event.stopPropagation();
+
+      const hasModifier = event.ctrlKey || event.altKey || event.shiftKey || event.metaKey;
+      const key = typeof event.key === 'string' ? event.key : '';
+
+      if (key === 'Escape' && !hasModifier) {
+        setHotkeyCaptureTarget('');
+        return;
+      }
+
+      if ((key === 'Backspace' || key === 'Delete') && !hasModifier) {
+        setHotkeyDraftValue(hotkeyCaptureTarget, '');
+        setHotkeyCaptureTarget('');
+        return;
+      }
+
+      const nextHotkey = getHotkeyFromKeyboardEvent(event);
+      if (!nextHotkey) return;
+
+      setHotkeyDraftValue(hotkeyCaptureTarget, nextHotkey);
+      setHotkeyCaptureTarget('');
+    };
+
+    window.addEventListener('keydown', handleHotkeyCapture, true);
+    return () => window.removeEventListener('keydown', handleHotkeyCapture, true);
+  }, [hotkeyCaptureTarget, setHotkeyDraftValue]);
 
   useEffect(() => {
-    if (!isMacroRecording) return;
-
-    const clickerHotkeyMain = getHotkeyMainKey(clickerHotkey);
-    const recordHotkeyMain = getHotkeyMainKey(recordHotkey);
-    const playbackHotkeyMain = getHotkeyMainKey(playbackHotkey);
+    if (!isMacroRecording || hotkeyCaptureTarget) return;
 
     const handleMacroRecord = (event) => {
       if (event.repeat) return;
 
-      const currentKey = event.key.toLowerCase();
       if (
-        currentKey === clickerHotkeyMain ||
-        currentKey === recordHotkeyMain ||
-        currentKey === playbackHotkeyMain
+        hotkeyMatchesKeyboardEvent(clickerHotkey, event) ||
+        hotkeyMatchesKeyboardEvent(recordHotkey, event) ||
+        hotkeyMatchesKeyboardEvent(playbackHotkey, event)
       ) {
         return;
       }
@@ -421,7 +464,7 @@ export function useAppController() {
 
     window.addEventListener('keydown', handleMacroRecord, true);
     return () => window.removeEventListener('keydown', handleMacroRecord, true);
-  }, [isMacroRecording, clickerHotkey, recordHotkey, playbackHotkey]);
+  }, [isMacroRecording, hotkeyCaptureTarget, clickerHotkey, recordHotkey, playbackHotkey]);
 
   useEffect(() => {
     if (window.electronAPI?.updateSettings) {
@@ -523,9 +566,8 @@ export function useAppController() {
 
   useEffect(() => {
     if (window.electronAPI) return;
-    const clickerHotkeyMain = getHotkeyMainKey(clickerHotkey);
     const handleKeyDown = (event) => {
-      if (event.key.toLowerCase() === clickerHotkeyMain) {
+      if (hotkeyMatchesKeyboardEvent(clickerHotkey, event)) {
         event.preventDefault();
         toggleClicker();
       }
@@ -616,9 +658,9 @@ export function useAppController() {
     clickerHotkeyInput,
     recordHotkeyInput,
     playbackHotkeyInput,
-    onClickerHotkeyInputChange,
-    onRecordHotkeyInputChange,
-    onPlaybackHotkeyInputChange,
+    hotkeyCaptureTarget,
+    beginHotkeyCapture,
+    cancelHotkeyCapture,
     applyMacroHotkeys,
     clickerHotkey,
     recordHotkey,
