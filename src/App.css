@@ -665,13 +665,153 @@
 .macro-checkbox {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  min-height: 42px;
+  padding: 6px 12px 6px 6px;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-full);
+  background:
+    linear-gradient(135deg, var(--bg-glass), transparent),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0));
   font-size: var(--font-size-xs);
   color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+  transition:
+    border-color 0.25s ease,
+    background 0.25s ease,
+    box-shadow 0.25s ease,
+    transform 0.2s ease;
 }
 
-.macro-checkbox input {
-  accent-color: var(--accent-primary);
+.macro-checkbox:hover {
+  border-color: var(--border-glow);
+  background:
+    linear-gradient(135deg, var(--bg-accent-subtle), transparent),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0));
+}
+
+.macro-checkbox:has(input:checked) {
+  border-color: var(--border-active);
+  color: var(--text-primary);
+  background:
+    linear-gradient(135deg, var(--bg-accent-soft), transparent 70%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0));
+  box-shadow: 0 10px 24px var(--accent-glow);
+}
+
+.macro-checkbox:has(input:active) {
+  transform: translateY(1px);
+}
+
+.macro-checkbox:has(input:disabled) {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.macro-checkbox-control {
+  position: relative;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.macro-checkbox-control input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  margin: 0;
+}
+
+.macro-checkbox-indicator {
+  position: absolute;
+  inset: 0;
+  border-radius: 7px;
+  border: 1px solid var(--border-primary);
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.14), transparent 45%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)),
+    var(--bg-input);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 6px 16px rgba(0, 0, 0, 0.2);
+  transition:
+    border-color 0.25s ease,
+    background 0.25s ease,
+    box-shadow 0.25s ease,
+    transform 0.2s ease;
+}
+
+.macro-checkbox-indicator::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.02);
+  opacity: 1;
+  transition: opacity 0.25s ease;
+}
+
+.macro-checkbox-indicator::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 5px;
+  height: 10px;
+  border: solid var(--text-on-accent);
+  border-width: 0 2px 2px 0;
+  opacity: 0;
+  transform: translate(-50%, -58%) rotate(45deg) scale(0.6);
+  transform-origin: center;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.macro-checkbox-control input:hover + .macro-checkbox-indicator {
+  border-color: var(--border-glow);
+}
+
+.macro-checkbox-control input:focus-visible + .macro-checkbox-indicator {
+  border-color: var(--border-active);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 0 4px var(--accent-glow),
+    0 8px 20px rgba(0, 0, 0, 0.24);
+}
+
+.macro-checkbox-control input:checked + .macro-checkbox-indicator {
+  border-color: transparent;
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.22), transparent 45%),
+    var(--accent-gradient);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    0 0 0 1px var(--border-active),
+    0 10px 22px var(--accent-glow);
+  transform: translateY(-1px);
+}
+
+.macro-checkbox-control input:checked + .macro-checkbox-indicator::before {
+  opacity: 0;
+}
+
+.macro-checkbox-control input:checked + .macro-checkbox-indicator::after {
+  opacity: 1;
+  transform: translate(-50%, -58%) rotate(45deg) scale(1);
+}
+
+.macro-checkbox-control input:disabled + .macro-checkbox-indicator {
+  box-shadow: none;
+}
+
+.macro-checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  line-height: var(--line-height-snug);
 }
 
 .macro-hotkey-grid {

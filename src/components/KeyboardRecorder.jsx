@@ -180,12 +180,15 @@ export default function KeyboardRecorder({
 
           <div className="macro-custom-speed-row">
             <label className="macro-checkbox">
-              <input
-                type="checkbox"
-                checked={useCustomSpeed}
-                onChange={(event) => onToggleUseCustomSpeed(event.target.checked)}
-              />
-              Custom speed
+              <span className="macro-checkbox-control">
+                <input
+                  type="checkbox"
+                  checked={useCustomSpeed}
+                  onChange={(event) => onToggleUseCustomSpeed(event.target.checked)}
+                />
+                <span className="macro-checkbox-indicator" aria-hidden="true" />
+              </span>
+              <span className="macro-checkbox-label">Custom speed</span>
             </label>
             <div className="interval-input-wrapper macro-speed-input-wrapper">
               <input
@@ -202,12 +205,15 @@ export default function KeyboardRecorder({
           </div>
 
           <label className="macro-checkbox">
-            <input
-              type="checkbox"
-              checked={continuousPlayback}
-              onChange={(event) => onContinuousPlaybackChange(event.target.checked)}
-            />
-            Continuous playback
+            <span className="macro-checkbox-control">
+              <input
+                type="checkbox"
+                checked={continuousPlayback}
+                onChange={(event) => onContinuousPlaybackChange(event.target.checked)}
+              />
+              <span className="macro-checkbox-indicator" aria-hidden="true" />
+            </span>
+            <span className="macro-checkbox-label">Continuous playback</span>
           </label>
         </div>
 
