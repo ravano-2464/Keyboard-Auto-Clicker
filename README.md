@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  Desktop app untuk auto key press dan macro playback dengan React + Vite + Electron.
+  Desktop app for automatic key presses and macro playback built with React + Vite + Electron.
 </p>
 
 <p align="center">
@@ -27,28 +27,28 @@
 
 | Area         | Capability                | Detail                                                                          |
 | ------------ | ------------------------- | ------------------------------------------------------------------------------- |
-| Auto Clicker | Target Key                | Pilih key cepat atau deteksi langsung via keypress.                             |
-| Auto Clicker | Interval                  | Input manual + preset `50ms`, `100ms`, `250ms`, `500ms`, `1s`, `2s`.            |
-| Auto Clicker | Repeat Mode               | `Infinite` atau `Custom Count`.                                                 |
-| Auto Clicker | Toggle                    | Global hotkey default `F6`.                                                     |
-| Recorder     | Keyboard Recording        | Rekam urutan key untuk macro playback.                                          |
-| Recorder     | Manual Macro Editor       | Tambah/edit/hapus step (`key` + `delay`).                                       |
-| Recorder     | Playback Source           | Pilih `Recorded Keys` atau `Manual Editor`.                                     |
-| Recorder     | Speed Control             | Preset `0.5x`, `1x`, `2x`, `100x` + custom speed.                               |
+| Auto Clicker | Target Key                | Quickly choose a key or detect it directly via keypress.                        |
+| Auto Clicker | Interval                  | Manual input + presets `50ms`, `100ms`, `250ms`, `500ms`, `1s`, `2s`.          |
+| Auto Clicker | Repeat Mode               | `Infinite` or `Custom Count`.                                                   |
+| Auto Clicker | Toggle                    | Default global hotkey `F6`.                                                     |
+| Recorder     | Keyboard Recording        | Record key sequences for macro playback.                                        |
+| Recorder     | Manual Macro Editor       | Add/edit/remove steps (`key` + `delay`).                                        |
+| Recorder     | Playback Source           | Choose `Recorded Keys` or `Manual Editor`.                                      |
+| Recorder     | Speed Control             | Presets `0.5x`, `1x`, `2x`, `100x` + custom speed.                              |
 | Recorder     | Loop Mode                 | Continuous playback.                                                            |
-| Hotkeys      | Global Config             | Hotkey clicker, record, playback bisa diubah manual (`F6`, `F7`, `F8` default). |
-| Desktop      | Floating Window           | Always on top saat mode normal.                                                 |
-| Desktop      | Smart Fullscreen Behavior | Auto non-floating saat maximize/full screen.                                    |
-| Theme        | Design Tokens             | Dark/light mode pakai token terpusat.                                           |
+| Hotkeys      | Global Config             | Clicker, record, and playback hotkeys can be customized manually (`F6`, `F7`, `F8` by default). |
+| Desktop      | Floating Window           | Always on top in normal mode.                                                   |
+| Desktop      | Smart Fullscreen Behavior | Automatically disables floating mode when maximized/full screen.                |
+| Theme        | Design Tokens             | Dark/light mode with centralized tokens.                                        |
 
 ## 🎨 Design System
 
-Centralized styling ada di:
+Centralized styling lives in:
 
 - `src/components/styles/typography.css`
 - `src/components/styles/colors.css`
 
-File tersebut dipakai langsung oleh komponen supaya style konsisten dan scalable.
+These files are used directly by the components to keep styling consistent and scalable.
 
 ## 🛠️ Tech Stack
 
@@ -62,7 +62,7 @@ File tersebut dipakai langsung oleh komponen supaya style konsisten dan scalable
 
 ## 🚀 Quick Start
 
-### 📋 Prerequisite
+### 📋 Prerequisites
 
 - [Node.js](https://nodejs.org/) 18+
 - npm
@@ -79,7 +79,7 @@ npm install
 npm run dev
 ```
 
-Menjalankan Vite + Electron bersamaan, jadi app langsung muncul sebagai desktop app.
+Runs Vite + Electron together, so the app opens immediately as a desktop app.
 
 ### 🌐 Run Web Only (Optional)
 
@@ -93,21 +93,21 @@ npm run dev:web
 npm run electron:build
 ```
 
-Output installer/build ada di folder `release/`.
+Installer/build output is generated in the `release/` folder.
 
 ## 📜 Scripts
 
 | Script                   | Description                                    |
 | ------------------------ | ---------------------------------------------- |
-| `npm run dev`            | Jalankan Vite + Electron (desktop development) |
-| `npm run dev:web`        | Jalankan Vite web-only (tanpa Electron)        |
-| `npm run build`          | Build frontend dengan Vite                     |
-| `npm run preview`        | Preview hasil build frontend                   |
-| `npm run lint`           | Jalankan ESLint                                |
-| `npm run format`         | Format code dengan Prettier                    |
-| `npm run electron:dev`   | Alias ke `npm run dev`                         |
-| `npm run electron:start` | Jalankan Electron saja                         |
-| `npm run electron:build` | Build frontend + package Electron app          |
+| `npm run dev`            | Run Vite + Electron (desktop development)      |
+| `npm run dev:web`        | Run Vite in web-only mode (without Electron)   |
+| `npm run build`          | Build the frontend with Vite                   |
+| `npm run preview`        | Preview the frontend build                     |
+| `npm run lint`           | Run ESLint                                     |
+| `npm run format`         | Format code with Prettier                      |
+| `npm run electron:dev`   | Alias for `npm run dev`                        |
+| `npm run electron:start` | Run Electron only                              |
+| `npm run electron:build` | Build the frontend + package the Electron app  |
 
 ---
 
@@ -115,18 +115,18 @@ Output installer/build ada di folder `release/`.
 
 ### ⚡ Auto Clicker Flow
 
-1. Pilih `Target Key`.
-2. Atur `Click Interval`.
-3. Pilih `Repeat Mode`.
-4. Tekan `START AUTO CLICKER` atau hotkey aktif.
+1. Choose the `Target Key`.
+2. Set the `Click Interval`.
+3. Choose the `Repeat Mode`.
+4. Press `START AUTO CLICKER` or the active hotkey.
 
 ### ⌨️ Macro Recorder Flow
 
-1. Tekan `Start Recording` (atau hotkey record).
-2. Lakukan key press sesuai urutan.
-3. Tekan `Stop Recording`.
-4. Pilih playback source (`Recorded` / `Manual`).
-5. Atur speed + loop mode, lalu `Start Playback`.
+1. Press `Start Recording` (or the record hotkey).
+2. Perform key presses in the desired order.
+3. Press `Stop Recording`.
+4. Choose the playback source (`Recorded` / `Manual`).
+5. Set the speed + loop mode, then press `Start Playback`.
 
 ---
 
@@ -134,38 +134,38 @@ Output installer/build ada di folder `release/`.
 
 ```text
 Keyboard Auto Clicker/
-├── electron/                          # Kode sisi Electron (main process + bridge)
-│   ├── main.cjs                       # Buat window, IPC handler, global hotkey, clicker & macro engine
-│   └── preload.cjs                    # Expose API aman ke renderer via contextBridge
-├── src/                               # Kode UI React (renderer process)
-│   ├── components/                    # Komponen UI modular
-│   │   ├── styles/                    # Design token terpusat untuk komponen
-│   │   │   ├── colors.css             # Token warna dark/light mode
-│   │   │   └── typography.css         # Token typography (font-size, line-height, font-weight, dll)
-│   │   ├── IntervalSettings.jsx       # UI pengaturan interval auto clicker
-│   │   ├── KeyboardRecorder.jsx       # UI recording/playback macro + manual editor + hotkey settings
-│   │   ├── KeySelector.jsx            # UI pilih tombol target auto clicker
-│   │   ├── RepeatMode.jsx             # UI mode repeat (Infinite / Custom Count)
-│   │   ├── StatsBar.jsx               # Panel statistik runtime (click, waktu, key aktif)
-│   │   ├── StatusOrb.jsx              # Indikator status idle/running
+├── electron/                          # Electron-side code (main process + bridge)
+│   ├── main.cjs                       # Creates the window, IPC handlers, global hotkeys, clicker & macro engine
+│   └── preload.cjs                    # Exposes a safe API to the renderer via contextBridge
+├── src/                               # React UI code (renderer process)
+│   ├── components/                    # Modular UI components
+│   │   ├── styles/                    # Centralized design tokens for components
+│   │   │   ├── colors.css             # Dark/light mode color tokens
+│   │   │   └── typography.css         # Typography tokens (font-size, line-height, font-weight, etc.)
+│   │   ├── IntervalSettings.jsx       # Auto clicker interval settings UI
+│   │   ├── KeyboardRecorder.jsx       # Macro recording/playback UI + manual editor + hotkey settings
+│   │   ├── KeySelector.jsx            # Target key selector UI for the auto clicker
+│   │   ├── RepeatMode.jsx             # Repeat mode UI (Infinite / Custom Count)
+│   │   ├── StatsBar.jsx               # Runtime stats panel (clicks, time, active key)
+│   │   ├── StatusOrb.jsx              # Idle/running status indicator
 │   │   └── TitleBar.jsx               # Custom title bar (minimize, maximize, close, toggle theme)
-│   ├── hooks/                         # Logic layer (state + effect + helpers)
-│   │   ├── appHelpers.js              # Helper function & konstanta util app
-│   │   └── useAppController.js        # Pusat semua state/effect/callback aplikasi
-│   ├── App.css                        # Styling utama layout aplikasi
-│   ├── App.jsx                        # Root UI; konsumsi `useAppController` dan render komponen
-│   ├── index.css                      # Global style/reset
-│   └── main.jsx                       # Entry point React (mount ke DOM)
-├── public/                            # Asset publik (ikon/file statis)
-├── package.json                       # Script npm, dependency, metadata project, config build
-└── README.md                          # Dokumentasi project
+│   ├── hooks/                         # Logic layer (state + effects + helpers)
+│   │   ├── appHelpers.js              # App helper functions & utility constants
+│   │   └── useAppController.js        # Centralized app state/effects/callbacks
+│   ├── App.css                        # Main application layout styling
+│   ├── App.jsx                        # Root UI; consumes `useAppController` and renders components
+│   ├── index.css                      # Global styles/reset
+│   └── main.jsx                       # React entry point (mounts to the DOM)
+├── public/                            # Public assets (icons/static files)
+├── package.json                       # npm scripts, dependencies, project metadata, build config
+└── README.md                          # Project documentation
 ```
 
 ## 📝 Notes
 
-- Saat berjalan di Electron, simulasi key dilakukan dari main process (PowerShell SendKeys di Windows).
-- Global hotkey harus memakai kombinasi yang tidak bentrok dengan shortcut sistem/aplikasi lain.
+- When running in Electron, key simulation is performed from the main process (PowerShell SendKeys on Windows).
+- Global hotkeys should use key combinations that do not conflict with system or application shortcuts.
 
 ## 📄 License
 
-Project ini dibuat untuk keperluan personal oleh **Ravano**.
+This project was created for personal use by **Ravano**.
