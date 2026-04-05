@@ -44,6 +44,7 @@ export function useAppController() {
   const [recordHotkeyInput, setRecordHotkeyInput] = useState(DEFAULT_RECORD_HOTKEY);
   const [playbackHotkeyInput, setPlaybackHotkeyInput] = useState(DEFAULT_PLAYBACK_HOTKEY);
   const [hotkeyCaptureTarget, setHotkeyCaptureTarget] = useState('');
+  const [manualStepCaptureIndex, setManualStepCaptureIndex] = useState(null);
 
   const clickCountRef = useRef(0);
   const startTimeRef = useRef(null);
@@ -71,7 +72,12 @@ export function useAppController() {
     [playbackSource, manualMacroEvents, macroEvents]
   );
   const activeMacroDuration = useMemo(
-    () => activeMacroEvents[activeMacroEvents.length - 1]?.time || 0,
+    () =>
+      activeMacroEvents.reduce(
+        (maxDuration, event) =>
+          Math.max(maxDuration, (Number(event?.time) || 0) + (Number(event?.hold) || 0)),
+        0
+      ),
     [activeMacroEvents]
   );
 
@@ -228,6 +234,8 @@ export function useAppController() {
 
   const startMacroRecording = useCallback(async () => {
     setMacroError('');
+    setManualStepCaptureIndex(null);
+    setHotkeyCaptureTarget('');
     if (window.electronAPI?.stopMacroPlayback) {
       await window.electronAPI.stopMacroPlayback();
     }
@@ -263,6 +271,8 @@ export function useAppController() {
     }
     setIsMacroRecording(false);
     setIsMacroPlaying(false);
+    setManualStepCaptureIndex(null);
+    setHotkeyCaptureTarget('');
     setMacroEvents([]);
     setMacroSteps([]);
     macroEventsRef.current = [];
@@ -312,7 +322,7 @@ export function useAppController() {
   }, [isMacroPlaying, startMacroPlayback, stopMacroPlayback]);
 
   const addMacroStep = useCallback(() => {
-    const nextSteps = [...macroSteps, { key: 'A', delay: 100 }];
+    const nextSteps = [...macroSteps, { key: 'A', delay: 100, hold: 0 }];
     syncMacroFromSteps(nextSteps, true);
   }, [macroSteps, syncMacroFromSteps]);
 
@@ -329,6 +339,12 @@ export function useAppController() {
   const removeMacroStep = useCallback(
     (index) => {
       const nextSteps = macroSteps.filter((_, currentIndex) => currentIndex !== index);
+      setManualStepCaptureIndex((currentCaptureIndex) => {
+        if (currentCaptureIndex === null) return currentCaptureIndex;
+        if (currentCaptureIndex === index) return null;
+        if (currentCaptureIndex > index) return currentCaptureIndex - 1;
+        return currentCaptureIndex;
+      });
       syncMacroFromSteps(nextSteps, true);
     },
     [macroSteps, syncMacroFromSteps]
@@ -361,11 +377,22 @@ export function useAppController() {
 
   const beginHotkeyCapture = useCallback((target) => {
     setMacroError('');
+    setManualStepCaptureIndex(null);
     setHotkeyCaptureTarget(target);
   }, []);
 
   const cancelHotkeyCapture = useCallback(() => {
     setHotkeyCaptureTarget('');
+  }, []);
+
+  const beginManualStepCapture = useCallback((index) => {
+    setMacroError('');
+    setHotkeyCaptureTarget('');
+    setManualStepCaptureIndex(index);
+  }, []);
+
+  const cancelManualStepCapture = useCallback(() => {
+    setManualStepCaptureIndex(null);
   }, []);
 
   const applyMacroHotkeys = useCallback(async () => {
@@ -439,6 +466,41 @@ export function useAppController() {
   }, [hotkeyCaptureTarget, setHotkeyDraftValue]);
 
   useEffect(() => {
+    if (manualStepCaptureIndex === null || isMacroRecording) return;
+
+    const handleManualStepCapture = (event) => {
+      if (event.repeat) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation?.();
+
+      const hasModifier = event.ctrlKey || event.altKey || event.shiftKey || event.metaKey;
+      const key = typeof event.key === 'string' ? event.key : '';
+
+      if (key === 'Escape' && !hasModifier) {
+        setManualStepCaptureIndex(null);
+        return;
+      }
+
+      if ((key === 'Backspace' || key === 'Delete') && !hasModifier) {
+        updateMacroStep(manualStepCaptureIndex, { key: '' });
+        setManualStepCaptureIndex(null);
+        return;
+      }
+
+      const normalizedKey = normalizeRecordedKey(key);
+      if (!normalizedKey) return;
+
+      updateMacroStep(manualStepCaptureIndex, { key: normalizedKey });
+      setManualStepCaptureIndex(null);
+    };
+
+    window.addEventListener('keydown', handleManualStepCapture, true);
+    return () => window.removeEventListener('keydown', handleManualStepCapture, true);
+  }, [manualStepCaptureIndex, isMacroRecording, updateMacroStep]);
+
+  useEffect(() => {
     if (!isMacroRecording || hotkeyCaptureTarget) return;
 
     const handleMacroRecord = (event) => {
@@ -509,8 +571,15 @@ export function useAppController() {
           setMacroEvents(recordingResult.events);
           macroEventsRef.current = recordingResult.events;
           setMacroSteps(eventsToSteps(recordingResult.events));
-          const lastTime = recordingResult.events[recordingResult.events.length - 1]?.time || 0;
-          setMacroRecordingElapsed(lastTime);
+          const totalDuration = recordingResult.events.reduce(
+            (maxDuration, macroEvent) =>
+              Math.max(
+                maxDuration,
+                (Number(macroEvent?.time) || 0) + (Number(macroEvent?.hold) || 0)
+              ),
+            0
+          );
+          setMacroRecordingElapsed(totalDuration);
           setPlaybackSource('recorded');
         }
       } catch (error) {
@@ -661,6 +730,9 @@ export function useAppController() {
     hotkeyCaptureTarget,
     beginHotkeyCapture,
     cancelHotkeyCapture,
+    manualStepCaptureIndex,
+    beginManualStepCapture,
+    cancelManualStepCapture,
     applyMacroHotkeys,
     clickerHotkey,
     recordHotkey,

@@ -596,37 +596,106 @@
 .macro-step-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
 }
 
-.macro-step-row {
-  display: grid;
-  grid-template-columns: 30px minmax(80px, 1fr) minmax(110px, 140px) auto;
+.macro-step-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 45%), var(--bg-input);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease,
+    transform 0.2s ease;
+}
+
+.macro-step-card:hover {
+  border-color: var(--border-glow);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    0 10px 24px rgba(0, 0, 0, 0.16);
+}
+
+.macro-step-card-head {
+  display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.macro-step-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.macro-step-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.macro-step-field-key {
+  grid-column: 1 / -1;
+}
+
+.macro-step-field-label {
+  font-size: var(--font-size-2xs);
+  color: var(--text-tertiary);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wider);
 }
 
 .macro-step-index {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-primary);
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-accent-soft);
+  background: var(--bg-accent-soft);
   font-size: var(--font-size-xs);
-  color: var(--text-secondary);
+  font-weight: var(--font-weight-semibold);
+  color: var(--accent-secondary);
+}
+
+.macro-step-key-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
 }
 
 .macro-step-key-input {
+  flex: 1;
+  min-width: 0;
   font-size: var(--font-size-sm);
   padding: 8px 10px;
   padding-right: 10px;
   text-transform: uppercase;
 }
 
+.macro-step-capture-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 112px;
+  min-height: 42px;
+  white-space: nowrap;
+}
+
 .macro-step-delay-wrapper {
-  max-width: 140px;
+  max-width: none;
 }
 
 .macro-step-delay-input {
@@ -635,8 +704,24 @@
   padding-right: 30px;
 }
 
+.macro-step-hold-wrapper {
+  max-width: none;
+}
+
+.macro-step-hold-input {
+  font-size: var(--font-size-sm);
+  padding: 8px 10px;
+  padding-right: 46px;
+}
+
 .macro-step-remove-btn {
   white-space: nowrap;
+}
+
+.macro-step-hint {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  line-height: var(--line-height-snug);
 }
 
 .macro-speed-section {
@@ -731,8 +816,7 @@
   border: 1px solid var(--border-primary);
   background:
     radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.14), transparent 45%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)),
-    var(--bg-input);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)), var(--bg-input);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
     0 6px 16px rgba(0, 0, 0, 0.2);
@@ -837,9 +921,7 @@
   padding: 12px 14px;
   border: 1px solid var(--border-primary);
   border-radius: var(--radius-md);
-  background:
-    linear-gradient(135deg, var(--bg-glass), transparent),
-    var(--bg-input);
+  background: linear-gradient(135deg, var(--bg-glass), transparent), var(--bg-input);
   color: var(--text-primary);
   font-family: inherit;
   text-align: left;
@@ -853,9 +935,7 @@
 
 .macro-hotkey-capture:hover {
   border-color: var(--border-glow);
-  background:
-    linear-gradient(135deg, var(--bg-accent-subtle), transparent),
-    var(--bg-input);
+  background: linear-gradient(135deg, var(--bg-accent-subtle), transparent), var(--bg-input);
 }
 
 .macro-hotkey-capture:focus-visible {
@@ -871,10 +951,10 @@
 
 .macro-hotkey-capture.listening {
   border-color: var(--accent-primary);
-  background:
-    linear-gradient(135deg, var(--bg-accent-soft), transparent 75%),
-    var(--bg-input);
-  box-shadow: 0 0 0 1px var(--border-active), var(--shadow-glow);
+  background: linear-gradient(135deg, var(--bg-accent-soft), transparent 75%), var(--bg-input);
+  box-shadow:
+    0 0 0 1px var(--border-active),
+    var(--shadow-glow);
   animation: pulse-glow 2s ease-in-out infinite;
 }
 
@@ -925,23 +1005,13 @@
 }
 
 @media (max-width: 540px) {
-  .macro-step-row {
-    grid-template-columns: 30px minmax(0, 1fr);
+  .macro-step-grid {
+    grid-template-columns: 1fr;
   }
 
-  .macro-step-key-input {
-    grid-column: 2;
-  }
-
-  .macro-step-delay-wrapper {
-    grid-column: 2;
-    max-width: none;
-    min-width: 0;
-  }
-
-  .macro-step-remove-btn {
-    grid-column: 2;
-    justify-self: start;
+  .macro-step-key-group {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .macro-hotkey-grid {

@@ -62,6 +62,9 @@ function App() {
     hotkeyCaptureTarget,
     beginHotkeyCapture,
     cancelHotkeyCapture,
+    manualStepCaptureIndex,
+    beginManualStepCapture,
+    cancelManualStepCapture,
     applyMacroHotkeys,
     clickerHotkey,
     recordHotkey,
@@ -128,6 +131,9 @@ function App() {
           hotkeyCaptureTarget={hotkeyCaptureTarget}
           onBeginHotkeyCapture={beginHotkeyCapture}
           onCancelHotkeyCapture={cancelHotkeyCapture}
+          manualStepCaptureIndex={manualStepCaptureIndex}
+          onBeginManualStepCapture={beginManualStepCapture}
+          onCancelManualStepCapture={cancelManualStepCapture}
           onApplyHotkeys={applyMacroHotkeys}
           clickerHotkey={clickerHotkey}
           recordHotkey={recordHotkey}

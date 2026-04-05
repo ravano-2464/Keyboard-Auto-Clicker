@@ -22,6 +22,7 @@ let clickerHotkey = 'F6';
 let recordHotkey = 'F7';
 let playbackHotkey = 'F8';
 const macroPlaybackTimers = new Set();
+const activeHeldKeys = new Map();
 const ELECTRON_HOTKEY_MODIFIER_MAP = {
   Ctrl: 'Control',
   Alt: 'Alt',
@@ -287,6 +288,27 @@ function initKeySimulator() {
     '',
     '    public static string SendKey(string rawKey)',
     '    {',
+    '        string keyDownError = SendKeyState(rawKey, false);',
+    '        if (keyDownError != null)',
+    '        {',
+    '            return keyDownError;',
+    '        }',
+    '',
+    '        return SendKeyState(rawKey, true);',
+    '    }',
+    '',
+    '    public static string SendKeyDown(string rawKey)',
+    '    {',
+    '        return SendKeyState(rawKey, false);',
+    '    }',
+    '',
+    '    public static string SendKeyUp(string rawKey)',
+    '    {',
+    '        return SendKeyState(rawKey, true);',
+    '    }',
+    '',
+    '    private static string SendKeyState(string rawKey, bool keyUp)',
+    '    {',
     '        if (string.IsNullOrWhiteSpace(rawKey))',
     '        {',
     '            return "Empty key value";',
@@ -305,15 +327,19 @@ function initKeySimulator() {
     '            flags |= KEYEVENTF_EXTENDEDKEY;',
     '        }',
     '',
-    '        INPUT[] inputs = new INPUT[2];',
+    '        if (keyUp)',
+    '        {',
+    '            flags |= KEYEVENTF_KEYUP;',
+    '        }',
+    '',
+    '        INPUT[] inputs = new INPUT[1];',
     '        inputs[0] = CreateKeyboardInput(vk, scan, flags);',
-    '        inputs[1] = CreateKeyboardInput(vk, scan, flags | KEYEVENTF_KEYUP);',
     '',
     '        uint sent = SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(typeof(INPUT)));',
     '        if (sent != inputs.Length)',
     '        {',
     '            int lastError = Marshal.GetLastWin32Error();',
-    '            return "SendInput failed (sent " + sent + "/2, lastError=" + lastError + ")";',
+    '            return "SendInput failed (sent " + sent + "/1, lastError=" + lastError + ")";',
     '        }',
     '',
     '        return null;',
@@ -363,12 +389,12 @@ function initKeySimulator() {
     '        if (key.Length == 1)',
     '        {',
     '            char upper = char.ToUpperInvariant(key[0]);',
-    '            if (upper >= \'A\' && upper <= \'Z\')',
+    "            if (upper >= 'A' && upper <= 'Z')",
     '            {',
     '                return (ushort)upper;',
     '            }',
     '',
-    '            if (upper >= \'0\' && upper <= \'9\')',
+    "            if (upper >= '0' && upper <= '9')",
     '            {',
     '                return (ushort)upper;',
     '            }',
@@ -399,7 +425,15 @@ function initKeySimulator() {
     '    if ($null -eq $s) { break }',
     '    if ($s -ne "") {',
     '        try {',
-    '            $errorMessage = [KeyboardSender]::SendKey($s)',
+    '            $parts = $s.Split(@("|"), 2, [System.StringSplitOptions]::None)',
+    '            $errorMessage = $null',
+    '            if ($parts.Length -eq 2 -and $parts[0] -eq "__KAC_DOWN__") {',
+    '                $errorMessage = [KeyboardSender]::SendKeyDown($parts[1])',
+    '            } elseif ($parts.Length -eq 2 -and $parts[0] -eq "__KAC_UP__") {',
+    '                $errorMessage = [KeyboardSender]::SendKeyUp($parts[1])',
+    '            } else {',
+    '                $errorMessage = [KeyboardSender]::SendKey($s)',
+    '            }',
     '            if ($errorMessage) {',
     '                [Console]::Error.WriteLine("KSIM_SEND_FAILED: " + $errorMessage)',
     '            }',
@@ -477,6 +511,18 @@ function destroyKeySimulator() {
   }
 }
 
+function writeToKeySimulator(line) {
+  if (!psProcess || !psReady) return false;
+
+  try {
+    psProcess.stdin.write(`${line}\n`);
+    return true;
+  } catch (e) {
+    console.error('[KeySim] Failed to send key:', e.message);
+    return false;
+  }
+}
+
 function simulateKeyPress(key) {
   if (!psProcess || !psReady) return;
 
@@ -486,11 +532,53 @@ function simulateKeyPress(key) {
     return;
   }
 
-  try {
-    psProcess.stdin.write(`${normalizedKey}\n`);
-  } catch (e) {
-    console.error('[KeySim] Failed to send key:', e.message);
+  writeToKeySimulator(normalizedKey);
+}
+
+function simulateKeyDown(key) {
+  const normalizedKey = typeof key === 'string' ? key.trim() : '';
+  if (!normalizedKey) {
+    console.warn('[KeySim] Empty key-down value, skipping');
+    return;
   }
+
+  writeToKeySimulator(`__KAC_DOWN__|${normalizedKey}`);
+}
+
+function simulateKeyUp(key) {
+  const normalizedKey = typeof key === 'string' ? key.trim() : '';
+  if (!normalizedKey) {
+    console.warn('[KeySim] Empty key-up value, skipping');
+    return;
+  }
+
+  writeToKeySimulator(`__KAC_UP__|${normalizedKey}`);
+}
+
+function markHeldKey(key) {
+  const normalizedKey = typeof key === 'string' ? key.trim() : '';
+  if (!normalizedKey) return;
+  activeHeldKeys.set(normalizedKey, (activeHeldKeys.get(normalizedKey) || 0) + 1);
+}
+
+function unmarkHeldKey(key) {
+  const normalizedKey = typeof key === 'string' ? key.trim() : '';
+  if (!normalizedKey) return;
+  const currentCount = activeHeldKeys.get(normalizedKey) || 0;
+  if (currentCount <= 1) {
+    activeHeldKeys.delete(normalizedKey);
+    return;
+  }
+  activeHeldKeys.set(normalizedKey, currentCount - 1);
+}
+
+function releaseHeldKeys() {
+  activeHeldKeys.forEach((count, key) => {
+    for (let index = 0; index < count; index += 1) {
+      simulateKeyUp(key);
+    }
+  });
+  activeHeldKeys.clear();
 }
 
 function sendMacroError(message) {
@@ -533,20 +621,25 @@ function normalizeRecordedEvents(events) {
     .map((item) => ({
       key: typeof item?.key === 'string' ? item.key.trim() : '',
       time: Number(item?.time),
+      hold: Number(item?.hold ?? 0),
     }))
     .filter((item) => item.key && Number.isFinite(item.time))
     .map((item) => ({
       key: item.key,
       time: Math.max(0, Math.round(item.time)),
+      hold: Number.isFinite(item.hold) ? Math.max(0, Math.round(item.hold)) : 0,
     }))
     .sort((a, b) => a.time - b.time);
 }
 
 function stopMacroPlayback() {
-  if (!isMacroPlaying) return { success: true, playing: false };
+  const wasPlaying = isMacroPlaying;
   isMacroPlaying = false;
   clearMacroPlaybackTimers();
-  sendMacroPlaybackStatus();
+  releaseHeldKeys();
+  if (wasPlaying) {
+    sendMacroPlaybackStatus();
+  }
   return { success: true, playing: false };
 }
 
@@ -587,22 +680,37 @@ async function startMacroPlayback(options = {}) {
   const timeline = macroRecording.map((event) => ({
     key: event.key,
     time: Math.max(0, event.time - baseTime),
+    hold: Math.max(0, event.hold || 0),
   }));
-  const lastTime = timeline[timeline.length - 1]?.time || 0;
+  const totalTimelineDuration = timeline.reduce(
+    (maxDuration, event) => Math.max(maxDuration, event.time + event.hold),
+    0
+  );
 
   const runCycle = () => {
     if (!isMacroPlaying) return;
 
     timeline.forEach((event) => {
       const delay = Math.max(0, Math.round(event.time / macroPlaybackSpeed));
+      const holdDuration =
+        event.hold > 0 ? Math.max(1, Math.round(event.hold / macroPlaybackSpeed)) : 0;
       scheduleMacroTimer(() => {
-        if (isMacroPlaying) {
+        if (!isMacroPlaying) return;
+
+        if (holdDuration > 0) {
+          simulateKeyDown(event.key);
+          markHeldKey(event.key);
+          scheduleMacroTimer(() => {
+            simulateKeyUp(event.key);
+            unmarkHeldKey(event.key);
+          }, holdDuration);
+        } else {
           simulateKeyPress(event.key);
         }
       }, delay);
     });
 
-    const cycleDuration = Math.max(30, Math.round(lastTime / macroPlaybackSpeed) + 30);
+    const cycleDuration = Math.max(30, Math.round(totalTimelineDuration / macroPlaybackSpeed) + 30);
     scheduleMacroTimer(() => {
       if (!isMacroPlaying) return;
       if (macroContinuousPlayback) {

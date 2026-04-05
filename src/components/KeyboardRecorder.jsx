@@ -1,4 +1,4 @@
-import { Save, Trash2 } from 'lucide-react';
+import { Keyboard, Save, Trash2 } from 'lucide-react';
 
 export default function KeyboardRecorder({
   isMacroRecording,
@@ -36,6 +36,9 @@ export default function KeyboardRecorder({
   hotkeyCaptureTarget,
   onBeginHotkeyCapture,
   onCancelHotkeyCapture,
+  manualStepCaptureIndex,
+  onBeginManualStepCapture,
+  onCancelManualStepCapture,
   onApplyHotkeys,
   clickerHotkey,
   recordHotkey,
@@ -146,44 +149,105 @@ export default function KeyboardRecorder({
               No steps yet. Add steps manually or start recording inside the app.
             </div>
           ) : (
-            <div className="macro-step-list">
-              {manualSteps.map((step, index) => (
-                <div key={`macro-step-${index}`} className="macro-step-row">
-                  <div className="macro-step-index">{index + 1}</div>
-                  <input
-                    type="text"
-                    className="interval-input macro-step-key-input"
-                    value={step.key}
-                    onChange={(event) =>
-                      onUpdateManualStep(index, { key: normalizeRecordedKey(event.target.value) })
-                    }
-                    placeholder="Key"
-                    disabled={isMacroRecording}
-                  />
-                  <div className="interval-input-wrapper macro-step-delay-wrapper">
-                    <input
-                      type="number"
-                      className="interval-input macro-step-delay-input"
-                      value={step.delay}
-                      min={0}
-                      step={1}
-                      onChange={(event) =>
-                        onUpdateManualStep(index, { delay: Number(event.target.value) || 0 })
-                      }
-                      disabled={isMacroRecording}
-                    />
-                    <span className="interval-unit">ms</span>
-                  </div>
-                  <button
-                    className="preset-btn macro-step-remove-btn"
-                    onClick={() => onRemoveManualStep(index)}
-                    disabled={isMacroRecording}
-                  >
-                    Remove
-                  </button>
-                </div>
-              ))}
-            </div>
+            <>
+              <div className="macro-step-list">
+                {manualSteps.map((step, index) => {
+                  const isListening = manualStepCaptureIndex === index;
+
+                  return (
+                    <div key={`macro-step-${index}`} className="macro-step-card">
+                      <div className="macro-step-card-head">
+                        <div className="macro-step-index">Step {index + 1}</div>
+                        <button
+                          type="button"
+                          className="preset-btn macro-step-remove-btn"
+                          onClick={() => onRemoveManualStep(index)}
+                          disabled={isMacroRecording}
+                        >
+                          Remove
+                        </button>
+                      </div>
+
+                      <div className="macro-step-grid">
+                        <label className="macro-step-field macro-step-field-key">
+                          <span className="macro-step-field-label">Key</span>
+                          <div className="macro-step-key-group">
+                            <input
+                              type="text"
+                              className="interval-input macro-step-key-input"
+                              value={step.key}
+                              onChange={(event) =>
+                                onUpdateManualStep(index, {
+                                  key: normalizeRecordedKey(event.target.value),
+                                })
+                              }
+                              placeholder="Key"
+                              disabled={isMacroRecording}
+                            />
+                            <button
+                              type="button"
+                              className={`preset-btn macro-step-capture-btn ${isListening ? 'active' : ''}`}
+                              onClick={() =>
+                                isListening
+                                  ? onCancelManualStepCapture()
+                                  : onBeginManualStepCapture(index)
+                              }
+                              disabled={isMacroRecording}
+                            >
+                              <Keyboard size={12} />
+                              {isListening ? 'Press key...' : 'Record'}
+                            </button>
+                          </div>
+                        </label>
+
+                        <label className="macro-step-field">
+                          <span className="macro-step-field-label">Delay</span>
+                          <div className="interval-input-wrapper macro-step-delay-wrapper">
+                            <input
+                              type="number"
+                              className="interval-input macro-step-delay-input"
+                              value={step.delay}
+                              min={0}
+                              step={1}
+                              onChange={(event) =>
+                                onUpdateManualStep(index, {
+                                  delay: Number(event.target.value) || 0,
+                                })
+                              }
+                              disabled={isMacroRecording}
+                            />
+                            <span className="interval-unit">ms</span>
+                          </div>
+                        </label>
+
+                        <label className="macro-step-field">
+                          <span className="macro-step-field-label">Hold</span>
+                          <div className="interval-input-wrapper macro-step-hold-wrapper">
+                            <input
+                              type="number"
+                              className="interval-input macro-step-hold-input"
+                              value={step.hold ?? 0}
+                              min={0}
+                              step={1}
+                              onChange={(event) =>
+                                onUpdateManualStep(index, { hold: Number(event.target.value) || 0 })
+                              }
+                              disabled={isMacroRecording}
+                            />
+                            <span className="interval-unit">ms</span>
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="macro-step-hint">
+                {manualStepCaptureIndex === null
+                  ? 'Tip: Delay waits before the step starts, and Hold keeps the key pressed for that many milliseconds.'
+                  : 'Listening for a step key. Press Esc to cancel or Delete to clear the key.'}
+              </div>
+            </>
           )}
         </div>
 

@@ -118,11 +118,14 @@ export function normalizeHotkeyInput(rawValue) {
 export function eventsToSteps(events) {
   let prevTime = 0;
   return events.map((event, index) => {
-    const delay = index === 0 ? event.time : event.time - prevTime;
-    prevTime = event.time;
+    const eventTime = Math.max(0, Math.round(Number(event?.time) || 0));
+    const hold = Math.max(0, Math.round(Number(event?.hold) || 0));
+    const delay = index === 0 ? eventTime : eventTime - prevTime;
+    prevTime = eventTime;
     return {
       key: event.key,
       delay: Math.max(0, Math.round(delay)),
+      hold,
     };
   });
 }
@@ -134,8 +137,9 @@ export function stepsToEvents(steps) {
     const key = normalizeRecordedKey((step.key || '').trim());
     if (!key) return;
     const delay = Math.max(0, Math.round(Number(step.delay) || 0));
+    const hold = Math.max(0, Math.round(Number(step.hold) || 0));
     elapsed += delay;
-    normalized.push({ key, time: elapsed });
+    normalized.push({ key, time: elapsed, hold });
   });
   return normalized;
 }
