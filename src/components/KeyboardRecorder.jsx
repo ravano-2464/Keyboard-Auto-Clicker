@@ -206,14 +206,18 @@ export default function KeyboardRecorder({
                             <input
                               type="number"
                               className="interval-input macro-step-delay-input"
-                              value={step.delay}
+                              value={step.delay ?? ''}
                               min={0}
                               step={1}
-                              onChange={(event) =>
+                              onChange={(event) => {
+                                const nextValue = event.target.value;
                                 onUpdateManualStep(index, {
-                                  delay: Number(event.target.value) || 0,
-                                })
-                              }
+                                  delay:
+                                    nextValue === ''
+                                      ? ''
+                                      : Math.max(0, parseInt(nextValue, 10) || 0),
+                                });
+                              }}
                               disabled={isMacroRecording}
                             />
                             <span className="interval-unit">ms</span>
@@ -226,12 +230,18 @@ export default function KeyboardRecorder({
                             <input
                               type="number"
                               className="interval-input macro-step-hold-input"
-                              value={step.hold ?? 0}
+                              value={step.hold ?? ''}
                               min={0}
                               step={1}
-                              onChange={(event) =>
-                                onUpdateManualStep(index, { hold: Number(event.target.value) || 0 })
-                              }
+                              onChange={(event) => {
+                                const nextValue = event.target.value;
+                                onUpdateManualStep(index, {
+                                  hold:
+                                    nextValue === ''
+                                      ? ''
+                                      : Math.max(0, parseInt(nextValue, 10) || 0),
+                                });
+                              }}
                               disabled={isMacroRecording}
                             />
                             <span className="interval-unit">ms</span>
