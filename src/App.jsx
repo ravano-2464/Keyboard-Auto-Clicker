@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Play, Square } from 'lucide-react';
 import './components/styles/colors.css';
 import './components/styles/typography.css';
@@ -12,6 +13,11 @@ import StatsBar from './components/StatsBar';
 import { useAppController } from './hooks/useAppController';
 
 function App() {
+  const [windowState, setWindowState] = useState({
+    isMaximized: false,
+    isFullScreen: false,
+  });
+
   const {
     theme,
     toggleTheme,
@@ -72,13 +78,56 @@ function App() {
     macroError,
   } = useAppController();
 
+  useEffect(() => {
+    if (!window.electronAPI?.getWindowState) return;
+
+    let isMounted = true;
+
+    window.electronAPI
+      .getWindowState()
+      .then((state) => {
+        if (!isMounted) return;
+        setWindowState({
+          isMaximized: Boolean(state?.isMaximized),
+          isFullScreen: Boolean(state?.isFullScreen),
+        });
+      })
+      .catch(() => {});
+
+    const cleanup = window.electronAPI.onWindowStateChange?.((state) => {
+      setWindowState({
+        isMaximized: Boolean(state?.isMaximized),
+        isFullScreen: Boolean(state?.isFullScreen),
+      });
+    });
+
+    return () => {
+      isMounted = false;
+      cleanup?.();
+    };
+  }, []);
+
+  const isWindowFullBleed = windowState.isMaximized || windowState.isFullScreen;
+
   return (
-    <div className="app-container">
+    <div className={`app-container ${isWindowFullBleed ? 'window-full-bleed' : ''}`}>
       <TitleBar theme={theme} onToggleTheme={toggleTheme} />
 
       <div className="main-content">
-        <StatusOrb isRunning={isRunning} />
-
+        <StatusOrb
+          isRunning={isRunning}
+          isMacroRecording={isMacroRecording}
+          isMacroPlaying={isMacroPlaying}
+          playbackSource={playbackSource}
+          selectedKey={selectedKey}
+          interval={interval}
+          activeStepsCount={activeStepsCount}
+          activeDurationLabel={activeDurationLabel}
+          recordingDurationLabel={recordingDurationLabel}
+          clickerHotkey={clickerHotkey}
+          recordHotkey={recordHotkey}
+          playbackHotkey={playbackHotkey}
+        />
         <KeySelector selectedKey={selectedKey} onKeyChange={setSelectedKey} disabled={isRunning} />
 
         <IntervalSettings

@@ -1,4 +1,14 @@
-import { Keyboard, Save, Trash2 } from 'lucide-react';
+import {
+  Clock3,
+  Keyboard,
+  Layers3,
+  Play,
+  Radio,
+  RotateCw,
+  Save,
+  Sparkles,
+  Trash2,
+} from 'lucide-react';
 
 export default function KeyboardRecorder({
   isMacroRecording,
@@ -45,6 +55,67 @@ export default function KeyboardRecorder({
   playbackHotkey,
   macroError,
 }) {
+  const playbackSourceLabel = playbackSource === 'manual' ? 'Manual Editor' : 'Recorded Keys';
+  const macroStatusTone = isMacroPlaying ? 'playing' : isMacroRecording ? 'recording' : 'idle';
+  const selectedSourceItems =
+    playbackSource === 'manual' ? manualSteps.length : recordedEventsCount;
+  const StatusIcon = isMacroPlaying ? Play : isMacroRecording ? Radio : Sparkles;
+  const macroStatusBadge = isMacroPlaying
+    ? 'Playback Active'
+    : isMacroRecording
+      ? 'Recording Live'
+      : 'Recorder Ready';
+  const macroStatusLabel = isMacroPlaying
+    ? `Playing ${playbackSourceLabel}`
+    : isMacroRecording
+      ? 'Recording Keyboard Input'
+      : 'Macro Recorder Ready';
+  const macroStatusDescription = isMacroPlaying
+    ? `Macro sedang berjalan dari ${playbackSourceLabel}. Tekan ${playbackHotkey} untuk berhentikan playback dengan cepat.`
+    : isMacroRecording
+      ? `Setiap tombol keyboard sedang direkam sekarang. Tekan ${recordHotkey} lagi untuk menyimpan hasil rekaman.`
+      : 'Rekam urutan baru, pilih source playback, atau jalankan macro yang sudah siap langsung dari panel ini.';
+  const macroQuickHotkey = isMacroPlaying
+    ? playbackHotkey
+    : isMacroRecording
+      ? recordHotkey
+      : playbackHotkey;
+  const macroQuickLabel = isMacroPlaying
+    ? 'Stop Playback'
+    : isMacroRecording
+      ? 'Stop Recording'
+      : 'Start Playback';
+  const macroStatusCards = [
+    {
+      icon: Keyboard,
+      label: 'Selected Source',
+      value: playbackSourceLabel,
+      note: `${selectedSourceItems} item siap di source ini`,
+    },
+    {
+      icon: Layers3,
+      label: isMacroRecording ? 'Captured Steps' : 'Active Steps',
+      value: activeStepsCount > 0 ? `${activeStepsCount}` : '0',
+      note: isMacroRecording
+        ? 'Jumlah event yang sudah masuk'
+        : 'Step yang akan dipakai saat playback',
+    },
+    {
+      icon: Clock3,
+      label: isMacroRecording ? 'Recording Time' : 'Timeline',
+      value: isMacroRecording ? recordingDurationLabel : activeDurationLabel,
+      note: isMacroRecording ? 'Durasi rekaman saat ini' : 'Total durasi source terpilih',
+    },
+    {
+      icon: RotateCw,
+      label: 'Loop Mode',
+      value: continuousPlayback ? 'Continuous' : 'Single Run',
+      note: continuousPlayback
+        ? 'Akan berulang sampai dihentikan'
+        : 'Berhenti setelah sekali jalan',
+    },
+  ];
+
   const renderHotkeyCapture = (target, label, value, placeholder) => {
     const isListening = hotkeyCaptureTarget === target;
 
@@ -103,25 +174,63 @@ export default function KeyboardRecorder({
           </button>
         </div>
 
-        <div className="macro-meta">
-          <span>Source: {playbackSource === 'manual' ? 'Manual Editor' : 'Recorded Keys'}</span>
-          <span>Steps: {activeStepsCount}</span>
-          <span>Duration: {activeDurationLabel}</span>
-          {isMacroRecording && <span>Recording: {recordingDurationLabel}</span>}
+        <div className={`macro-status-board ${macroStatusTone}`}>
+          <div className="macro-status-board-head">
+            <div className={`macro-status-badge ${macroStatusTone}`}>
+              <span className="macro-status-badge-dot" />
+              <span>{macroStatusBadge}</span>
+            </div>
+            <div className="macro-status-source-tag">{playbackSourceLabel}</div>
+          </div>
+
+          <div className="macro-status-main">
+            <div className="macro-status-main-copy">
+              <div className={`macro-status-icon ${macroStatusTone}`}>
+                <StatusIcon size={18} />
+              </div>
+              <div className="macro-status-copy">
+                <div className="macro-status-title">{macroStatusLabel}</div>
+                <div className="macro-status-description">{macroStatusDescription}</div>
+              </div>
+            </div>
+
+            <div className="macro-status-quick">
+              <div className="macro-status-quick-label">{macroQuickLabel}</div>
+              <div className="macro-status-quick-hotkey">{macroQuickHotkey}</div>
+            </div>
+          </div>
+
+          <div className="macro-status-grid">
+            {macroStatusCards.map((card) => {
+              const Icon = card.icon;
+              return (
+                <div key={card.label} className="macro-status-card">
+                  <div className="macro-status-card-icon">
+                    <Icon size={14} />
+                  </div>
+                  <div className="macro-status-card-copy">
+                    <div className="macro-status-card-label">{card.label}</div>
+                    <div className="macro-status-card-value">{card.value}</div>
+                    <div className="macro-status-card-note">{card.note}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         <div className="macro-source-selector">
           <button
             className={`preset-btn ${playbackSource === 'recorded' ? 'active' : ''}`}
             onClick={() => onPlaybackSourceChange('recorded')}
-            disabled={isMacroRecording || recordedEventsCount === 0}
+            disabled={isMacroRecording || isMacroPlaying || recordedEventsCount === 0}
           >
             Use Recorded
           </button>
           <button
             className={`preset-btn ${playbackSource === 'manual' ? 'active' : ''}`}
             onClick={() => onPlaybackSourceChange('manual')}
-            disabled={isMacroRecording || manualSteps.length === 0}
+            disabled={isMacroRecording || isMacroPlaying || manualSteps.length === 0}
           >
             Use Manual Editor
           </button>
