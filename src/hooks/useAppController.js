@@ -15,6 +15,7 @@ import {
   formatMacroDuration,
   simulateKeyInBrowser,
 } from './appHelpers';
+import { LANGUAGE_STORAGE_KEY, getInitialLanguage } from '../i18n';
 
 export function useAppController() {
   const [selectedKey, setSelectedKey] = useState('Space');
@@ -25,6 +26,7 @@ export function useAppController() {
   const [clickCount, setClickCount] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [theme, setTheme] = useState(getInitialTheme);
+  const [language, setLanguage] = useState(getInitialLanguage);
 
   const [isMacroRecording, setIsMacroRecording] = useState(false);
   const [macroEvents, setMacroEvents] = useState([]);
@@ -105,6 +107,11 @@ export function useAppController() {
     document.documentElement.setAttribute('data-theme', theme);
     window.localStorage.setItem(THEME_STORAGE_KEY, theme);
   }, [theme]);
+
+  useEffect(() => {
+    document.documentElement.lang = language;
+    window.localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
+  }, [language]);
 
   useEffect(() => {
     if (isRunning) {
@@ -677,12 +684,12 @@ export function useAppController() {
   }, []);
 
   const canStartMacroPlayback = activeMacroEvents.length > 0 || isMacroPlaying;
-  const recordingLabel = isMacroRecording ? 'Stop Recording' : 'Start Recording';
-  const playbackLabel = isMacroPlaying ? 'Stop Playback' : 'Start Playback';
 
   return {
     theme,
     toggleTheme,
+    language,
+    setLanguage,
     isRunning,
     toggleClicker,
     selectedKey,
@@ -697,8 +704,6 @@ export function useAppController() {
     elapsedTime,
     isMacroRecording,
     isMacroPlaying,
-    recordingLabel,
-    playbackLabel,
     canStartMacroPlayback,
     toggleMacroRecording,
     clearMacroRecording,

@@ -6,6 +6,7 @@ export default function RepeatMode({
   repeatCount,
   onRepeatCountChange,
   disabled,
+  copy,
 }) {
   return (
     <div className="settings-card">
@@ -14,14 +15,15 @@ export default function RepeatMode({
           <Repeat size={18} />
         </div>
         <div>
-          <div className="card-title">Repeat Mode</div>
-          <div className="card-subtitle">Choose how many times to repeat</div>
+          <div className="card-title">{copy.title}</div>
+          <div className="card-subtitle">{copy.subtitle}</div>
         </div>
       </div>
 
       <div className="repeat-mode-group">
         <div className="repeat-toggle-row">
           <button
+            type="button"
             className={`repeat-option ${mode === 'infinite' ? 'active' : ''}`}
             onClick={() => onModeChange('infinite')}
             disabled={disabled}
@@ -29,9 +31,10 @@ export default function RepeatMode({
             <span className="repeat-option-icon">
               <InfinityIcon size={16} />
             </span>
-            Infinite
+            {copy.infinite}
           </button>
           <button
+            type="button"
             className={`repeat-option ${mode === 'count' ? 'active' : ''}`}
             onClick={() => onModeChange('count')}
             disabled={disabled}
@@ -39,7 +42,7 @@ export default function RepeatMode({
             <span className="repeat-option-icon">
               <Hash size={16} />
             </span>
-            Custom Count
+            {copy.customCount}
           </button>
         </div>
 
@@ -59,9 +62,9 @@ export default function RepeatMode({
                 min={1}
                 max={999999}
                 disabled={disabled}
-                placeholder="Count"
+                placeholder={copy.countPlaceholder}
               />
-              <span className="interval-unit">times</span>
+              <span className="interval-unit">{copy.countUnit}</span>
             </div>
           </div>
         )}

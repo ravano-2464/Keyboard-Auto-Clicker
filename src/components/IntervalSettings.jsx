@@ -9,7 +9,7 @@ const PRESETS = [
   { label: '2s', value: 2000 },
 ];
 
-export default function IntervalSettings({ interval, onIntervalChange, disabled }) {
+export default function IntervalSettings({ interval, onIntervalChange, disabled, copy }) {
   const handleChange = (e) => {
     const val = parseInt(e.target.value, 10);
     if (!isNaN(val) && val > 0) {
@@ -24,8 +24,8 @@ export default function IntervalSettings({ interval, onIntervalChange, disabled 
           <Timer size={18} />
         </div>
         <div>
-          <div className="card-title">Click Interval</div>
-          <div className="card-subtitle">Delay between each key press</div>
+          <div className="card-title">{copy.title}</div>
+          <div className="card-subtitle">{copy.subtitle}</div>
         </div>
       </div>
 
@@ -40,7 +40,7 @@ export default function IntervalSettings({ interval, onIntervalChange, disabled 
               min={10}
               max={60000}
               disabled={disabled}
-              placeholder="Enter interval"
+              placeholder={copy.placeholder}
             />
             <span className="interval-unit">ms</span>
           </div>
@@ -48,12 +48,12 @@ export default function IntervalSettings({ interval, onIntervalChange, disabled 
             <Gauge size={14} className="stat-icon" />
             <span className="interval-speed-label">
               {interval < 100
-                ? 'Very Fast'
+                ? copy.speedLabel.veryFast
                 : interval < 500
-                  ? 'Fast'
+                  ? copy.speedLabel.fast
                   : interval < 1000
-                    ? 'Normal'
-                    : 'Slow'}
+                    ? copy.speedLabel.normal
+                    : copy.speedLabel.slow}
             </span>
           </div>
         </div>
@@ -61,6 +61,7 @@ export default function IntervalSettings({ interval, onIntervalChange, disabled 
         <div className="interval-presets">
           {PRESETS.map((preset) => (
             <button
+              type="button"
               key={preset.value}
               className={`preset-btn ${interval === preset.value ? 'active' : ''}`}
               onClick={() => onIntervalChange(preset.value)}

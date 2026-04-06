@@ -1,6 +1,6 @@
 import { Hash, Clock, Keyboard } from 'lucide-react';
 
-export default function StatsBar({ clickCount, elapsedTime, selectedKey }) {
+export default function StatsBar({ clickCount, elapsedTime, selectedKey, copy }) {
   const formatTime = (ms) => {
     const seconds = Math.floor(ms / 1000);
     const minutes = Math.floor(seconds / 60);
@@ -27,7 +27,7 @@ export default function StatsBar({ clickCount, elapsedTime, selectedKey }) {
       <div className="stat-item">
         <Keyboard size={12} className="stat-icon" />
         <div>
-          <div className="stat-label">Key</div>
+          <div className="stat-label">{copy.key}</div>
           <div className="stat-value">{formatKey(selectedKey)}</div>
         </div>
       </div>
@@ -37,7 +37,7 @@ export default function StatsBar({ clickCount, elapsedTime, selectedKey }) {
       <div className="stat-item">
         <Hash size={12} className="stat-icon" />
         <div>
-          <div className="stat-label">Clicks</div>
+          <div className="stat-label">{copy.clicks}</div>
           <div className="stat-value">{clickCount.toLocaleString()}</div>
         </div>
       </div>
@@ -47,7 +47,7 @@ export default function StatsBar({ clickCount, elapsedTime, selectedKey }) {
       <div className="stat-item">
         <Clock size={12} className="stat-icon" />
         <div>
-          <div className="stat-label">Time</div>
+          <div className="stat-label">{copy.time}</div>
           <div className="stat-value">{formatTime(elapsedTime)}</div>
         </div>
       </div>

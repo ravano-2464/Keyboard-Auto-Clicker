@@ -1,4 +1,5 @@
 import { Activity, Clock3, Command, Keyboard, Loader, Play, Radio, Sparkles } from 'lucide-react';
+import { getLocalizedKeyLabel } from '../i18n';
 
 export default function StatusOrb({
   isRunning,
@@ -13,6 +14,8 @@ export default function StatusOrb({
   clickerHotkey = 'F6',
   recordHotkey = 'F7',
   playbackHotkey = 'F8',
+  language = 'en',
+  copy,
 }) {
   const statusMode = isMacroPlaying
     ? 'playing'
@@ -21,43 +24,45 @@ export default function StatusOrb({
       : isRunning
         ? 'running'
         : 'idle';
-  const keyLabel = (selectedKey || 'Not Set').trim() || 'Not Set';
-  const playbackSourceLabel = playbackSource === 'manual' ? 'Manual Editor' : 'Recorded Keys';
+  const keyLabel = selectedKey?.trim()
+    ? getLocalizedKeyLabel(selectedKey, language)
+    : copy.notSet;
+  const playbackSourceLabel = copy.sourceLabel(playbackSource);
   const statusMap = {
     idle: {
-      label: 'IDLE',
-      eyebrow: 'System Ready',
-      description: 'Everything is armed. Pick a key or a macro source, then launch it instantly.',
+      label: copy.idle.label,
+      eyebrow: copy.idle.eyebrow,
+      description: copy.idle.description,
       hotkey: clickerHotkey,
-      hotkeyLabel: 'to toggle auto clicker',
-      hotkeyNote: 'Quick start or stop',
+      hotkeyLabel: copy.idle.hotkeyLabel,
+      hotkeyNote: copy.idle.hotkeyNote,
       orbIcon: Sparkles,
     },
     running: {
-      label: 'RUNNING',
-      eyebrow: 'Auto Clicker Live',
-      description: `Auto clicker is pressing ${keyLabel} every ${interval} ms.`,
+      label: copy.running.label,
+      eyebrow: copy.running.eyebrow,
+      description: copy.running.description(keyLabel, interval),
       hotkey: clickerHotkey,
-      hotkeyLabel: 'to stop auto clicker',
-      hotkeyNote: 'Toggle active click loop',
+      hotkeyLabel: copy.running.hotkeyLabel,
+      hotkeyNote: copy.running.hotkeyNote,
       orbIcon: Loader,
     },
     recording: {
-      label: 'RECORDING',
-      eyebrow: 'Keyboard Capture Live',
-      description: `Capturing live keystrokes now. Current session length: ${recordingDurationLabel}.`,
+      label: copy.recording.label,
+      eyebrow: copy.recording.eyebrow,
+      description: copy.recording.description(recordingDurationLabel),
       hotkey: recordHotkey,
-      hotkeyLabel: 'to stop recording',
-      hotkeyNote: 'Finish capture and save events',
+      hotkeyLabel: copy.recording.hotkeyLabel,
+      hotkeyNote: copy.recording.hotkeyNote,
       orbIcon: Radio,
     },
     playing: {
-      label: 'PLAYING',
-      eyebrow: 'Macro Playback Active',
-      description: `Running ${playbackSourceLabel} with ${activeStepsCount} step${activeStepsCount === 1 ? '' : 's'} across ${activeDurationLabel}.`,
+      label: copy.playing.label,
+      eyebrow: copy.playing.eyebrow,
+      description: copy.playing.description(playbackSourceLabel, activeStepsCount, activeDurationLabel),
       hotkey: playbackHotkey,
-      hotkeyLabel: 'to stop playback',
-      hotkeyNote: 'Stop macro playback instantly',
+      hotkeyLabel: copy.playing.hotkeyLabel,
+      hotkeyNote: copy.playing.hotkeyNote,
       orbIcon: Play,
     },
   };
@@ -68,42 +73,42 @@ export default function StatusOrb({
       icon: Keyboard,
       label:
         statusMode === 'playing'
-          ? 'Playback Source'
+          ? copy.cards.playbackSource
           : statusMode === 'recording'
-            ? 'Input Feed'
-            : 'Target Key',
+            ? copy.cards.inputFeed
+            : copy.cards.targetKey,
       value:
         statusMode === 'playing'
           ? playbackSourceLabel
           : statusMode === 'recording'
-            ? 'Live Keyboard'
+            ? copy.cards.liveKeyboard
             : keyLabel,
       note:
         statusMode === 'recording'
-          ? 'Listening to live keyboard input'
+          ? copy.cards.recordingInputNote
           : statusMode === 'playing'
-            ? 'Source currently driving macro playback'
+            ? copy.cards.playingSourceNote
             : statusMode === 'running'
-              ? 'Primary auto click target'
-              : 'Ready for the next trigger',
+              ? copy.cards.runningTargetNote
+              : copy.cards.idleTargetNote,
     },
     {
       icon: Activity,
-      label: statusMode === 'recording' ? 'Capture Buffer' : 'Macro Stack',
-      value: activeStepsCount > 0 ? `${activeStepsCount} steps` : 'Empty',
+      label: statusMode === 'recording' ? copy.cards.captureBuffer : copy.cards.macroStack,
+      value: activeStepsCount > 0 ? copy.stepCount(activeStepsCount) : copy.cards.empty,
       note:
         statusMode === 'playing'
-          ? 'Current loaded macro is executing'
-          : 'Recorded and manual steps stay ready here',
+          ? copy.cards.activeMacroNote
+          : copy.cards.defaultMacroNote,
     },
     {
       icon: Clock3,
       label:
         statusMode === 'playing'
-          ? 'Timeline'
+          ? copy.cards.timeline
           : statusMode === 'recording'
-            ? 'Recording Time'
-            : 'Cadence',
+            ? copy.cards.recordingTime
+            : copy.cards.cadence,
       value:
         statusMode === 'playing'
           ? activeDurationLabel
@@ -112,14 +117,14 @@ export default function StatusOrb({
             : `${interval} ms`,
       note:
         statusMode === 'playing'
-          ? 'Total macro playback duration'
+          ? copy.cards.playbackDurationNote
           : statusMode === 'recording'
-            ? 'Elapsed live capture length'
-            : 'Current click interval',
+            ? copy.cards.recordingDurationNote
+            : copy.cards.cadenceNote,
     },
     {
       icon: Command,
-      label: 'Control Hotkey',
+      label: copy.cards.controlHotkey,
       value: currentStatus.hotkey,
       note: currentStatus.hotkeyNote,
     },
@@ -134,7 +139,7 @@ export default function StatusOrb({
         </div>
         <div className="status-chip ghost">
           <Activity size={12} />
-          {activeStepsCount > 0 ? `${activeStepsCount} macro steps ready` : 'Macro stack is empty'}
+          {activeStepsCount > 0 ? copy.readyMacroSteps(activeStepsCount) : copy.emptyMacroStack}
         </div>
       </div>
 
@@ -153,14 +158,14 @@ export default function StatusOrb({
         </div>
 
         <div className="status-info">
-          <div className="status-kicker">System Pulse</div>
+          <div className="status-kicker">{copy.systemPulse}</div>
           <div className={`status-label ${statusMode}`}>{currentStatus.label}</div>
           <div className="status-description">{currentStatus.description}</div>
         </div>
       </div>
 
       <div className={`status-hint ${statusMode}`}>
-        <span className="status-hint-copy">Quick control</span>
+        <span className="status-hint-copy">{copy.quickControl}</span>
         <span className="hotkey-badge">
           <Command size={10} />
           {currentStatus.hotkey}

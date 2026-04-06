@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Keyboard, MousePointerClick, Crosshair } from 'lucide-react';
+import { getLocalizedKeyLabel } from '../i18n';
 
 const QUICK_KEYS = [
   'A',
@@ -22,7 +23,7 @@ const QUICK_KEYS = [
   '2',
 ];
 
-export default function KeySelector({ selectedKey, onKeyChange, disabled }) {
+export default function KeySelector({ selectedKey, onKeyChange, disabled, language, copy }) {
   const [isListening, setIsListening] = useState(false);
 
   const handleKeyDown = useCallback(
@@ -56,9 +57,7 @@ export default function KeySelector({ selectedKey, onKeyChange, disabled }) {
 
   const formatKeyDisplay = (key) => {
     if (!key) return '?';
-    if (key === ' ') return 'Space';
-    if (key.length === 1) return key.toUpperCase();
-    return key;
+    return getLocalizedKeyLabel(key, language);
   };
 
   return (
@@ -68,8 +67,8 @@ export default function KeySelector({ selectedKey, onKeyChange, disabled }) {
           <Keyboard size={18} />
         </div>
         <div>
-          <div className="card-title">Target Key</div>
-          <div className="card-subtitle">Select the key to auto-press</div>
+          <div className="card-title">{copy.title}</div>
+          <div className="card-subtitle">{copy.subtitle}</div>
         </div>
       </div>
 
@@ -80,14 +79,15 @@ export default function KeySelector({ selectedKey, onKeyChange, disabled }) {
           </div>
           <div className="key-display-label">
             {isListening
-              ? 'Press any key...'
+              ? copy.listeningPrompt
               : selectedKey
-                ? `Key: ${formatKeyDisplay(selectedKey)}`
-                : 'No key selected'}
+                ? copy.selectedKey(formatKeyDisplay(selectedKey))
+                : copy.noKeySelected}
           </div>
         </div>
 
         <button
+          type="button"
           className={`key-listen-btn ${isListening ? 'listening' : ''}`}
           onClick={() => {
             if (disabled) return;
@@ -96,14 +96,15 @@ export default function KeySelector({ selectedKey, onKeyChange, disabled }) {
           disabled={disabled}
         >
           <MousePointerClick size={14} />
-          {isListening ? 'Listening... Press a key' : 'Click to detect key press'}
+          {isListening ? copy.listenActive : copy.listenIdle}
         </button>
 
         <div className="key-preset-section">
-          <div className="key-preset-label">Quick Select</div>
+          <div className="key-preset-label">{copy.quickSelect}</div>
           <div className="key-preset-grid">
             {QUICK_KEYS.map((key) => (
               <button
+                type="button"
                 key={key}
                 className={`key-preset-btn ${selectedKey === key ? 'active' : ''}`}
                 onClick={() => handleQuickKey(key)}

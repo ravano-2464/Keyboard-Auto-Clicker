@@ -54,65 +54,66 @@ export default function KeyboardRecorder({
   recordHotkey,
   playbackHotkey,
   macroError,
+  copy,
 }) {
-  const playbackSourceLabel = playbackSource === 'manual' ? 'Manual Editor' : 'Recorded Keys';
+  const playbackSourceLabel = copy.sourceLabel(playbackSource);
   const macroStatusTone = isMacroPlaying ? 'playing' : isMacroRecording ? 'recording' : 'idle';
   const selectedSourceItems =
     playbackSource === 'manual' ? manualSteps.length : recordedEventsCount;
   const StatusIcon = isMacroPlaying ? Play : isMacroRecording ? Radio : Sparkles;
   const macroStatusBadge = isMacroPlaying
-    ? 'Playback Active'
+    ? copy.status.playingBadge
     : isMacroRecording
-      ? 'Recording Live'
-      : 'Recorder Ready';
+      ? copy.status.recordingBadge
+      : copy.status.idleBadge;
   const macroStatusLabel = isMacroPlaying
-    ? `Playing ${playbackSourceLabel}`
+    ? copy.status.playingTitle(playbackSourceLabel)
     : isMacroRecording
-      ? 'Recording Keyboard Input'
-      : 'Macro Recorder Ready';
+      ? copy.status.recordingTitle
+      : copy.status.idleTitle;
   const macroStatusDescription = isMacroPlaying
-    ? `Macro sedang berjalan dari ${playbackSourceLabel}. Tekan ${playbackHotkey} untuk berhentikan playback dengan cepat.`
+    ? copy.status.playingDescription(playbackSourceLabel, playbackHotkey)
     : isMacroRecording
-      ? `Setiap tombol keyboard sedang direkam sekarang. Tekan ${recordHotkey} lagi untuk menyimpan hasil rekaman.`
-      : 'Rekam urutan baru, pilih source playback, atau jalankan macro yang sudah siap langsung dari panel ini.';
+      ? copy.status.recordingDescription(recordHotkey)
+      : copy.status.idleDescription;
   const macroQuickHotkey = isMacroPlaying
     ? playbackHotkey
     : isMacroRecording
       ? recordHotkey
       : playbackHotkey;
   const macroQuickLabel = isMacroPlaying
-    ? 'Stop Playback'
+    ? copy.status.quickActionLabel.playing
     : isMacroRecording
-      ? 'Stop Recording'
-      : 'Start Playback';
+      ? copy.status.quickActionLabel.recording
+      : copy.status.quickActionLabel.idle;
   const macroStatusCards = [
     {
       icon: Keyboard,
-      label: 'Selected Source',
+      label: copy.cards.selectedSource,
       value: playbackSourceLabel,
-      note: `${selectedSourceItems} item siap di source ini`,
+      note: copy.cards.selectedSourceNote(selectedSourceItems),
     },
     {
       icon: Layers3,
-      label: isMacroRecording ? 'Captured Steps' : 'Active Steps',
+      label: isMacroRecording ? copy.cards.capturedSteps : copy.cards.activeSteps,
       value: activeStepsCount > 0 ? `${activeStepsCount}` : '0',
       note: isMacroRecording
-        ? 'Jumlah event yang sudah masuk'
-        : 'Step yang akan dipakai saat playback',
+        ? copy.cards.capturedStepsNote
+        : copy.cards.activeStepsNote,
     },
     {
       icon: Clock3,
-      label: isMacroRecording ? 'Recording Time' : 'Timeline',
+      label: isMacroRecording ? copy.cards.recordingTime : copy.cards.timeline,
       value: isMacroRecording ? recordingDurationLabel : activeDurationLabel,
-      note: isMacroRecording ? 'Durasi rekaman saat ini' : 'Total durasi source terpilih',
+      note: isMacroRecording ? copy.cards.recordingTimeNote : copy.cards.timelineNote,
     },
     {
       icon: RotateCw,
-      label: 'Loop Mode',
-      value: continuousPlayback ? 'Continuous' : 'Single Run',
+      label: copy.cards.loopMode,
+      value: continuousPlayback ? copy.cards.continuous : copy.cards.singleRun,
       note: continuousPlayback
-        ? 'Akan berulang sampai dihentikan'
-        : 'Berhenti setelah sekali jalan',
+        ? copy.cards.continuousNote
+        : copy.cards.singleRunNote,
     },
   ];
 
@@ -129,10 +130,10 @@ export default function KeyboardRecorder({
           disabled={isMacroRecording}
         >
           <span className="macro-hotkey-capture-value">
-            {isListening ? 'Press keys now...' : value || placeholder}
+            {isListening ? copy.hotkeyCapture.listeningValue : value || placeholder}
           </span>
           <span className="macro-hotkey-capture-meta">
-            {isListening ? 'Esc cancel • Del clear' : 'Click and press your hotkey'}
+            {isListening ? copy.hotkeyCapture.listeningMeta : copy.hotkeyCapture.idleMeta}
           </span>
         </button>
       </div>
@@ -146,26 +147,31 @@ export default function KeyboardRecorder({
           <Save size={18} />
         </div>
         <div>
-          <div className="card-title">Keyboard Recorder</div>
-          <div className="card-subtitle">
-            Record keystrokes, set playback speed, and run continuous loop
-          </div>
+          <div className="card-title">{copy.title}</div>
+          <div className="card-subtitle">{copy.subtitle}</div>
         </div>
       </div>
 
       <div className="macro-panel">
         <div className="macro-actions-row">
           <button
+            type="button"
             className={`preset-btn ${isMacroRecording ? 'active' : ''}`}
             onClick={onToggleRecording}
           >
             {recordingLabel}
           </button>
-          <button className="preset-btn" onClick={onClearRecording} disabled={isMacroRecording}>
+          <button
+            type="button"
+            className="preset-btn"
+            onClick={onClearRecording}
+            disabled={isMacroRecording}
+          >
             <Trash2 size={12} />
-            Clear
+            {copy.buttons.clear}
           </button>
           <button
+            type="button"
             className={`preset-btn ${isMacroPlaying ? 'active' : ''}`}
             onClick={onTogglePlayback}
             disabled={!canStartPlayback}
@@ -221,42 +227,48 @@ export default function KeyboardRecorder({
 
         <div className="macro-source-selector">
           <button
+            type="button"
             className={`preset-btn ${playbackSource === 'recorded' ? 'active' : ''}`}
             onClick={() => onPlaybackSourceChange('recorded')}
             disabled={isMacroRecording || isMacroPlaying || recordedEventsCount === 0}
           >
-            Use Recorded
+            {copy.buttons.useRecorded}
           </button>
           <button
+            type="button"
             className={`preset-btn ${playbackSource === 'manual' ? 'active' : ''}`}
             onClick={() => onPlaybackSourceChange('manual')}
             disabled={isMacroRecording || isMacroPlaying || manualSteps.length === 0}
           >
-            Use Manual Editor
+            {copy.buttons.useManual}
           </button>
         </div>
 
         <div className="macro-editor-section">
           <div className="macro-editor-head">
-            <div className="key-preset-label">Manual Macro Editor</div>
+            <div className="key-preset-label">{copy.fields.manualEditor}</div>
             <div className="macro-editor-actions">
-              <button className="preset-btn" onClick={onAddManualStep} disabled={isMacroRecording}>
-                Add Step
+              <button
+                type="button"
+                className="preset-btn"
+                onClick={onAddManualStep}
+                disabled={isMacroRecording}
+              >
+                {copy.buttons.addStep}
               </button>
               <button
+                type="button"
                 className="preset-btn"
                 onClick={onSaveManualMacro}
                 disabled={isMacroRecording || manualSteps.length === 0}
               >
-                Save Manual Macro
+                {copy.buttons.saveManual}
               </button>
             </div>
           </div>
 
           {manualSteps.length === 0 ? (
-            <div className="macro-step-empty">
-              No steps yet. Add steps manually or start recording inside the app.
-            </div>
+            <div className="macro-step-empty">{copy.emptyManual}</div>
           ) : (
             <>
               <div className="macro-step-list">
@@ -266,20 +278,20 @@ export default function KeyboardRecorder({
                   return (
                     <div key={`macro-step-${index}`} className="macro-step-card">
                       <div className="macro-step-card-head">
-                        <div className="macro-step-index">Step {index + 1}</div>
+                        <div className="macro-step-index">{copy.stepLabel(index + 1)}</div>
                         <button
                           type="button"
                           className="preset-btn macro-step-remove-btn"
                           onClick={() => onRemoveManualStep(index)}
                           disabled={isMacroRecording}
                         >
-                          Remove
+                          {copy.buttons.remove}
                         </button>
                       </div>
 
                       <div className="macro-step-grid">
                         <label className="macro-step-field macro-step-field-key">
-                          <span className="macro-step-field-label">Key</span>
+                          <span className="macro-step-field-label">{copy.fields.key}</span>
                           <div className="macro-step-key-group">
                             <input
                               type="text"
@@ -290,7 +302,7 @@ export default function KeyboardRecorder({
                                   key: normalizeRecordedKey(event.target.value),
                                 })
                               }
-                              placeholder="Key"
+                              placeholder={copy.fields.key}
                               disabled={isMacroRecording}
                             />
                             <button
@@ -304,13 +316,13 @@ export default function KeyboardRecorder({
                               disabled={isMacroRecording}
                             >
                               <Keyboard size={12} />
-                              {isListening ? 'Press key...' : 'Record'}
+                              {isListening ? copy.buttons.listening : copy.buttons.record}
                             </button>
                           </div>
                         </label>
 
                         <label className="macro-step-field">
-                          <span className="macro-step-field-label">Delay</span>
+                          <span className="macro-step-field-label">{copy.fields.delay}</span>
                           <div className="interval-input-wrapper macro-step-delay-wrapper">
                             <input
                               type="number"
@@ -334,7 +346,7 @@ export default function KeyboardRecorder({
                         </label>
 
                         <label className="macro-step-field">
-                          <span className="macro-step-field-label">Hold</span>
+                          <span className="macro-step-field-label">{copy.fields.hold}</span>
                           <div className="interval-input-wrapper macro-step-hold-wrapper">
                             <input
                               type="number"
@@ -363,18 +375,19 @@ export default function KeyboardRecorder({
               </div>
               <div className="macro-step-hint">
                 {manualStepCaptureIndex === null
-                  ? 'Tip: Delay waits before the step starts, and Hold keeps the key pressed for that many milliseconds.'
-                  : 'Listening for a step key. Press Esc to cancel or Delete to clear the key.'}
+                  ? copy.hints.manualIdle
+                  : copy.hints.manualListening}
               </div>
             </>
           )}
         </div>
 
         <div className="macro-speed-section">
-          <div className="key-preset-label">Playback Speed</div>
+          <div className="key-preset-label">{copy.fields.playbackSpeed}</div>
           <div className="interval-presets">
             {speedPresets.map((speed) => (
               <button
+                type="button"
                 key={speed}
                 className={`preset-btn ${!useCustomSpeed && selectedSpeedPreset === speed ? 'active' : ''}`}
                 onClick={() => onSelectSpeedPreset(speed)}
@@ -394,7 +407,7 @@ export default function KeyboardRecorder({
                 />
                 <span className="macro-checkbox-indicator" aria-hidden="true" />
               </span>
-              <span className="macro-checkbox-label">Custom speed</span>
+              <span className="macro-checkbox-label">{copy.fields.customSpeed}</span>
             </label>
             <div className="interval-input-wrapper macro-speed-input-wrapper">
               <input
@@ -419,26 +432,29 @@ export default function KeyboardRecorder({
               />
               <span className="macro-checkbox-indicator" aria-hidden="true" />
             </span>
-            <span className="macro-checkbox-label">Continuous playback</span>
+            <span className="macro-checkbox-label">{copy.fields.continuousPlayback}</span>
           </label>
         </div>
 
         <div className="macro-hotkey-grid">
-          {renderHotkeyCapture('clicker', 'Clicker Toggle Hotkey', clickerHotkeyInput, 'F6')}
-          {renderHotkeyCapture('record', 'Record Hotkey', recordHotkeyInput, 'F7')}
-          {renderHotkeyCapture('playback', 'Playback Hotkey', playbackHotkeyInput, 'F8')}
+          {renderHotkeyCapture('clicker', copy.fields.clickerHotkey, clickerHotkeyInput, 'F6')}
+          {renderHotkeyCapture('record', copy.fields.recordHotkey, recordHotkeyInput, 'F7')}
+          {renderHotkeyCapture(
+            'playback',
+            copy.fields.playbackHotkey,
+            playbackHotkeyInput,
+            'F8'
+          )}
         </div>
 
-        <div className="macro-hotkey-hint">
-          Click one field, press the key or key combo you want, then click Apply Hotkeys.
-        </div>
+        <div className="macro-hotkey-hint">{copy.hints.hotkey}</div>
 
         <div className="macro-hotkey-actions">
-          <button className="preset-btn" onClick={onApplyHotkeys}>
-            Apply Hotkeys
+          <button type="button" className="preset-btn" onClick={onApplyHotkeys}>
+            {copy.buttons.applyHotkeys}
           </button>
           <div className="macro-hotkey-active">
-            Active: CLICKER {clickerHotkey} | REC {recordHotkey} | PLAY {playbackHotkey}
+            {copy.activeHotkeys(clickerHotkey, recordHotkey, playbackHotkey)}
           </div>
         </div>
 

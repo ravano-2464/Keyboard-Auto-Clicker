@@ -11,6 +11,7 @@ import RepeatMode from './components/RepeatMode';
 import KeyboardRecorder from './components/KeyboardRecorder';
 import StatsBar from './components/StatsBar';
 import { useAppController } from './hooks/useAppController';
+import { getTranslations, translateRuntimeMessage } from './i18n';
 
 function App() {
   const [windowState, setWindowState] = useState({
@@ -21,6 +22,8 @@ function App() {
   const {
     theme,
     toggleTheme,
+    language,
+    setLanguage,
     isRunning,
     toggleClicker,
     selectedKey,
@@ -35,8 +38,6 @@ function App() {
     elapsedTime,
     isMacroRecording,
     isMacroPlaying,
-    recordingLabel,
-    playbackLabel,
     canStartMacroPlayback,
     toggleMacroRecording,
     clearMacroRecording,
@@ -78,6 +79,15 @@ function App() {
     macroError,
   } = useAppController();
 
+  const copy = getTranslations(language);
+  const recordingLabel = isMacroRecording
+    ? copy.keyboardRecorder.buttons.stopRecording
+    : copy.keyboardRecorder.buttons.startRecording;
+  const playbackLabel = isMacroPlaying
+    ? copy.keyboardRecorder.buttons.stopPlayback
+    : copy.keyboardRecorder.buttons.startPlayback;
+  const translatedMacroError = translateRuntimeMessage(language, macroError);
+
   useEffect(() => {
     if (!window.electronAPI?.getWindowState) return;
 
@@ -111,7 +121,13 @@ function App() {
 
   return (
     <div className={`app-container ${isWindowFullBleed ? 'window-full-bleed' : ''}`}>
-      <TitleBar theme={theme} onToggleTheme={toggleTheme} />
+      <TitleBar
+        theme={theme}
+        onToggleTheme={toggleTheme}
+        language={language}
+        onLanguageChange={setLanguage}
+        copy={copy.titleBar}
+      />
 
       <div className="main-content">
         <StatusOrb
@@ -127,13 +143,22 @@ function App() {
           clickerHotkey={clickerHotkey}
           recordHotkey={recordHotkey}
           playbackHotkey={playbackHotkey}
+          language={language}
+          copy={copy.statusOrb}
         />
-        <KeySelector selectedKey={selectedKey} onKeyChange={setSelectedKey} disabled={isRunning} />
+        <KeySelector
+          selectedKey={selectedKey}
+          onKeyChange={setSelectedKey}
+          disabled={isRunning}
+          language={language}
+          copy={copy.keySelector}
+        />
 
         <IntervalSettings
           interval={interval}
           onIntervalChange={setInterval_}
           disabled={isRunning}
+          copy={copy.intervalSettings}
         />
 
         <RepeatMode
@@ -142,6 +167,7 @@ function App() {
           repeatCount={repeatCount}
           onRepeatCountChange={setRepeatCount}
           disabled={isRunning}
+          copy={copy.repeatMode}
         />
 
         <KeyboardRecorder
@@ -187,7 +213,8 @@ function App() {
           clickerHotkey={clickerHotkey}
           recordHotkey={recordHotkey}
           playbackHotkey={playbackHotkey}
-          macroError={macroError}
+          macroError={translatedMacroError}
+          copy={copy.keyboardRecorder}
         />
 
         <div className="action-section">
@@ -195,19 +222,24 @@ function App() {
             {isRunning ? (
               <>
                 <Square size={18} />
-                STOP AUTO CLICKER
+                {copy.actions.stop}
               </>
             ) : (
               <>
                 <Play size={18} />
-                START AUTO CLICKER
+                {copy.actions.start}
               </>
             )}
           </button>
         </div>
       </div>
 
-      <StatsBar clickCount={clickCount} elapsedTime={elapsedTime} selectedKey={selectedKey} />
+      <StatsBar
+        clickCount={clickCount}
+        elapsedTime={elapsedTime}
+        selectedKey={selectedKey}
+        copy={copy.statsBar}
+      />
     </div>
   );
 }

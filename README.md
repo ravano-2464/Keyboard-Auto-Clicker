@@ -52,11 +52,35 @@ These files are used directly by the components to keep styling consistent and s
 
 ## 🛠️ Tech Stack
 
-- [React 19](https://react.dev/)
-- [Vite 7](https://vite.dev/)
-- [Electron 40](https://www.electronjs.org/)
-- [Lucide React](https://lucide.dev/)
-- [ESLint 9](https://eslint.org/)
+<p align="center">
+  <a href="https://react.dev/">
+    <img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=white" alt="React 19" />
+  </a>
+  <a href="https://vite.dev/">
+    <img src="https://img.shields.io/badge/Vite-7-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite 7" />
+  </a>
+  <a href="https://www.electronjs.org/">
+    <img src="https://img.shields.io/badge/Electron-40-47848F?style=for-the-badge&logo=electron&logoColor=white" alt="Electron 40" />
+  </a>
+  <a href="https://nodejs.org/">
+    <img src="https://img.shields.io/badge/Node.js-18%2B-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js 18+" />
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://lucide.dev/">
+    <img src="https://img.shields.io/badge/Lucide%20React-Icons-F56565?style=for-the-badge&logo=lucide&logoColor=white" alt="Lucide React" />
+  </a>
+  <a href="https://eslint.org/">
+    <img src="https://img.shields.io/badge/ESLint-9-4B32C3?style=for-the-badge&logo=eslint&logoColor=white" alt="ESLint 9" />
+  </a>
+  <a href="https://prettier.io/">
+    <img src="https://img.shields.io/badge/Prettier-3-F7B93E?style=for-the-badge&logo=prettier&logoColor=1A2B34" alt="Prettier 3" />
+  </a>
+  <a href="https://www.electron.build/">
+    <img src="https://img.shields.io/badge/Electron%20Builder-26-8DD6F9?style=for-the-badge&logo=electronbuilder&logoColor=white" alt="Electron Builder 26" />
+  </a>
+</p>
 
 ---
 

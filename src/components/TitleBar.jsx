@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Copy, Minus, Square, X, Keyboard, Moon, Sun } from 'lucide-react';
+import { Copy, Globe2, Minus, Square, X, Keyboard, Moon, Sun } from 'lucide-react';
 
-export default function TitleBar({ theme, onToggleTheme }) {
+export default function TitleBar({ theme, onToggleTheme, language, onLanguageChange, copy }) {
   const [isMaximized, setIsMaximized] = useState(false);
 
   useEffect(() => {
@@ -53,29 +53,55 @@ export default function TitleBar({ theme, onToggleTheme }) {
           <Keyboard size={16} />
         </div>
         <div>
-          <div className="titlebar-title">Keyboard Auto Clicker</div>
-          <div className="titlebar-subtitle">by Ravano</div>
+          <div className="titlebar-title">{copy.title}</div>
+          <div className="titlebar-subtitle">{copy.subtitle}</div>
         </div>
       </div>
       <div className="titlebar-controls">
+        <div className="language-switcher" title={copy.languageLabel}>
+          <span className="language-switcher-label">
+            <Globe2 size={12} />
+            {copy.languageLabel}
+          </span>
+          <div className="language-switcher-group" role="group" aria-label={copy.languageLabel}>
+            <button
+              type="button"
+              className={`language-switcher-btn ${language === 'en' ? 'active' : ''}`}
+              onClick={() => onLanguageChange('en')}
+              title={copy.switchLanguage('en')}
+            >
+              EN
+            </button>
+            <button
+              type="button"
+              className={`language-switcher-btn ${language === 'id' ? 'active' : ''}`}
+              onClick={() => onLanguageChange('id')}
+              title={copy.switchLanguage('id')}
+            >
+              ID
+            </button>
+          </div>
+        </div>
         <button
+          type="button"
           className="titlebar-btn theme-toggle-btn"
           onClick={onToggleTheme}
-          title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+          title={copy.themeToggle(theme)}
         >
           {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
         </button>
-        <button className="titlebar-btn" onClick={handleMinimize} title="Minimize">
+        <button type="button" className="titlebar-btn" onClick={handleMinimize} title={copy.minimize}>
           <Minus size={14} />
         </button>
         <button
+          type="button"
           className="titlebar-btn"
           onClick={handleMaximize}
-          title={isMaximized ? 'Restore' : 'Maximize'}
+          title={isMaximized ? copy.restore : copy.maximize}
         >
           {isMaximized ? <Copy size={12} /> : <Square size={12} />}
         </button>
-        <button className="titlebar-btn close" onClick={handleClose} title="Close">
+        <button type="button" className="titlebar-btn close" onClick={handleClose} title={copy.close}>
           <X size={14} />
         </button>
       </div>
