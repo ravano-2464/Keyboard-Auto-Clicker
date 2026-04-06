@@ -419,8 +419,20 @@
 .status-orb-icon {
   position: relative;
   z-index: 1;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
   color: var(--accent-secondary);
+  transform-origin: center;
   transition: color 0.3s ease;
+}
+
+.status-orb-icon svg {
+  display: block;
+  flex-shrink: 0;
 }
 
 .status-orb.running .status-orb-icon {
