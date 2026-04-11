@@ -1,3 +1,5 @@
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Activity, Clock3, Command, Keyboard, Loader, Play, Radio, Sparkles } from 'lucide-react';
 import { getLocalizedKeyLabel } from '../i18n';
 
@@ -17,6 +19,55 @@ export default function StatusOrb({
   language = 'en',
   copy,
 }) {
+  const orbShellRef = useRef(null);
+  const [isOrbDocked, setIsOrbDocked] = useState(false);
+
+  useEffect(() => {
+    const shellEl = orbShellRef.current;
+    if (!shellEl) return;
+
+    const scrollHost = shellEl.closest('.main-content');
+    if (!scrollHost) return;
+
+    if ('IntersectionObserver' in window) {
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          const isVisible = entry.isIntersecting && entry.intersectionRatio > 0;
+          setIsOrbDocked(!isVisible);
+        },
+        {
+          root: scrollHost,
+          threshold: 0.05,
+        }
+      );
+      observer.observe(shellEl);
+
+      return () => {
+        observer.disconnect();
+      };
+    }
+
+    let frameId = 0;
+    const updateDockedState = () => {
+      const shellRect = shellEl.getBoundingClientRect();
+      const hostRect = scrollHost.getBoundingClientRect();
+      const isAboveViewport = shellRect.bottom <= hostRect.top + 12;
+      setIsOrbDocked(isAboveViewport);
+    };
+    const scheduleUpdate = () => {
+      cancelAnimationFrame(frameId);
+      frameId = requestAnimationFrame(updateDockedState);
+    };
+    updateDockedState();
+    scrollHost.addEventListener('scroll', scheduleUpdate, { passive: true });
+    window.addEventListener('resize', scheduleUpdate);
+    return () => {
+      cancelAnimationFrame(frameId);
+      scrollHost.removeEventListener('scroll', scheduleUpdate);
+      window.removeEventListener('resize', scheduleUpdate);
+    };
+  }, []);
+
   const statusMode = isMacroPlaying
     ? 'playing'
     : isMacroRecording
@@ -131,7 +182,8 @@ export default function StatusOrb({
   ];
 
   return (
-    <section className={`status-section ${statusMode}`}>
+    <>
+      <section className={`status-section ${statusMode}`}>
       <div className="status-topline">
         <div className={`status-chip primary ${statusMode}`}>
           <span className="status-chip-dot" />
@@ -144,7 +196,7 @@ export default function StatusOrb({
       </div>
 
       <div className="status-hero">
-        <div className="status-orb-shell">
+        <div className="status-orb-shell" ref={orbShellRef}>
           <div className="status-orb-container">
             <div className={`status-orb ${statusMode}`}>
               <div className="status-orb-ring" />
@@ -190,6 +242,23 @@ export default function StatusOrb({
           );
         })}
       </div>
-    </section>
+      </section>
+
+      {typeof document !== 'undefined'
+        ? createPortal(
+            <div className={`status-orb-dock ${isOrbDocked ? 'visible' : ''}`} aria-hidden={!isOrbDocked}>
+              <div className={`status-orb ${statusMode} compact`}>
+                <div className="status-orb-ring" />
+                <div className="status-orb-ring secondary" />
+                <div className="status-orb-core" />
+                <div className="status-orb-icon">
+                  <OrbIcon size={22} />
+                </div>
+              </div>
+            </div>,
+            document.body
+          )
+        : null}
+    </>
   );
 }
