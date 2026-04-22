@@ -8,6 +8,9 @@
   "scripts": {
     "dev": "concurrently -k \"vite --strictPort\" \"wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .\"",
     "dev:web": "vite",
+    "install:mobile": "npm --prefix mobile-expo install",
+    "dev:mobile": "cd mobile-expo && npx expo start --port 8083",
+    "dev:mobile:clear": "cd mobile-expo && npx expo start --port 8083 --clear",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
@@ -39,6 +42,7 @@
   "dependencies": {
     "lucide-react": "^0.575.0",
     "prettier": "^3.8.1",
+    "qrcode": "^1.5.4",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

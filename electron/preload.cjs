@@ -16,6 +16,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   maximize: () => ipcRenderer.invoke('window-maximize'),
   close: () => ipcRenderer.invoke('window-close'),
   getWindowState: () => ipcRenderer.invoke('get-window-state'),
+  getRemoteAccess: () => ipcRenderer.invoke('get-remote-access'),
 
   onClickerStatus: (callback) => {
     const handler = (event, data) => callback(data);

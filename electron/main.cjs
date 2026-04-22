@@ -1,8 +1,11 @@
 const { app, BrowserWindow, ipcMain, globalShortcut } = require('electron');
+const http = require('http');
 const path = require('path');
 const os = require('os');
 const fs = require('fs');
+const crypto = require('crypto');
 const { spawn } = require('child_process');
+const { renderRemoteControlPage } = require('./remoteControlPage.cjs');
 
 let mainWindow;
 let clickerInterval = null;
@@ -13,6 +16,15 @@ let psReadyResolvers = [];
 
 let currentKey = 'Space';
 let currentInterval = 100;
+let clickerTickCount = 0;
+
+const REMOTE_SERVER_DEFAULT_PORT = 39227;
+const REMOTE_SERVER_PORT_SCAN_LIMIT = 25;
+const EXPO_MOBILE_DEFAULT_PORT = 8083;
+let remoteServer = null;
+let remoteServerPort = REMOTE_SERVER_DEFAULT_PORT;
+let remoteServerError = '';
+const remoteAccessToken = crypto.randomBytes(24).toString('hex');
 
 let macroRecording = [];
 let isMacroPlaying = false;
@@ -93,6 +105,422 @@ function toElectronAccelerator(hotkey) {
       return part;
     })
     .join('+');
+}
+
+function isPrivateLanAddress(address) {
+  if (typeof address !== 'string') return false;
+  if (address.startsWith('10.')) return true;
+  if (address.startsWith('192.168.')) return true;
+
+  const match = address.match(/^172\.(\d{1,3})\./);
+  if (!match) return false;
+  const secondOctet = Number(match[1]);
+  return Number.isFinite(secondOctet) && secondOctet >= 16 && secondOctet <= 31;
+}
+
+function getPreferredLanAddress() {
+  const interfaces = os.networkInterfaces();
+  let fallbackAddress = '';
+
+  Object.values(interfaces).forEach((entries) => {
+    if (!Array.isArray(entries)) return;
+
+    entries.forEach((entry) => {
+      if (!entry || entry.internal || entry.family !== 'IPv4') {
+        return;
+      }
+
+      if (isPrivateLanAddress(entry.address)) {
+        fallbackAddress = entry.address;
+      } else if (!fallbackAddress) {
+        fallbackAddress = entry.address;
+      }
+    });
+  });
+
+  return fallbackAddress;
+}
+
+function buildRemoteControlUrl() {
+  if (!remoteServer) return '';
+  const host = getPreferredLanAddress();
+  if (!host) return '';
+  return `http://${host}:${remoteServerPort}/remote?token=${remoteAccessToken}`;
+}
+
+function buildExpoGoUrl(host, remoteUrl) {
+  if (!host) return '';
+  const encodedRemoteUrl = remoteUrl ? encodeURIComponent(remoteUrl) : '';
+  if (!encodedRemoteUrl) {
+    return `exp://${host}:${EXPO_MOBILE_DEFAULT_PORT}`;
+  }
+  return `exp://${host}:${EXPO_MOBILE_DEFAULT_PORT}/--/?remoteUrl=${encodedRemoteUrl}`;
+}
+
+function getRemoteStatusPayload() {
+  return {
+    running: isRunning,
+    key: currentKey,
+    interval: currentInterval,
+    clickCount: clickerTickCount,
+    simulatorReady: psReady,
+  };
+}
+
+function getRemoteAccessInfo() {
+  const host = getPreferredLanAddress();
+  const url = buildRemoteControlUrl();
+  const expoUrl = buildExpoGoUrl(host, url);
+  const errorMessage =
+    remoteServerError || (!host ? 'No LAN IPv4 address detected. Connect to Wi-Fi/LAN first.' : '');
+
+  return {
+    enabled: Boolean(remoteServer),
+    host: host || '',
+    port: remoteServerPort,
+    url,
+    expoPort: EXPO_MOBILE_DEFAULT_PORT,
+    expoUrl,
+    error: errorMessage,
+  };
+}
+
+function safeTokensMatch(candidate) {
+  if (typeof candidate !== 'string') return false;
+  const normalized = candidate.trim();
+  if (normalized.length !== remoteAccessToken.length) {
+    return false;
+  }
+
+  try {
+    return crypto.timingSafeEqual(Buffer.from(normalized), Buffer.from(remoteAccessToken));
+  } catch {
+    return false;
+  }
+}
+
+function isRemoteApiAuthorized(req, requestUrl) {
+  const headerToken = Array.isArray(req.headers['x-kac-token'])
+    ? req.headers['x-kac-token'][0]
+    : req.headers['x-kac-token'];
+  const queryToken = requestUrl.searchParams.get('token') || '';
+  return safeTokensMatch(String(headerToken || '')) || safeTokensMatch(queryToken);
+}
+
+function normalizeRemoteKey(rawKey) {
+  if (typeof rawKey !== 'string') return '';
+  const key = rawKey.trim();
+  if (!key) return '';
+  if (key === ' ') return 'Space';
+  if (key.length === 1) return key.toUpperCase();
+  if (/^f\d{1,2}$/i.test(key)) return key.toUpperCase();
+
+  const aliases = {
+    space: 'Space',
+    spacebar: 'Space',
+    esc: 'Escape',
+    del: 'Delete',
+    return: 'Enter',
+    pgup: 'PageUp',
+    pgdn: 'PageDown',
+  };
+
+  const lower = key.toLowerCase();
+  if (aliases[lower]) {
+    return aliases[lower];
+  }
+
+  return key;
+}
+
+function normalizeRemoteInterval(rawInterval) {
+  const parsed = Number(rawInterval);
+  if (!Number.isFinite(parsed)) return null;
+  const rounded = Math.round(parsed);
+  if (rounded < 10 || rounded > 600000) return null;
+  return rounded;
+}
+
+function writeRemoteCorsHeaders(res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-KAC-Token');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+}
+
+function writeJsonResponse(res, statusCode, payload) {
+  writeRemoteCorsHeaders(res);
+  res.statusCode = statusCode;
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.end(JSON.stringify(payload));
+}
+
+function writeHtmlResponse(res, statusCode, htmlContent) {
+  res.statusCode = statusCode;
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.end(htmlContent);
+}
+
+function readRequestBody(req, maxBytes = 32768) {
+  return new Promise((resolve, reject) => {
+    let raw = '';
+
+    req.on('data', (chunk) => {
+      raw += chunk.toString();
+      if (raw.length > maxBytes) {
+        reject(new Error('Payload too large'));
+        req.destroy();
+      }
+    });
+
+    req.on('end', () => {
+      if (!raw.trim()) {
+        resolve({});
+        return;
+      }
+
+      try {
+        resolve(JSON.parse(raw));
+      } catch {
+        reject(new Error('Invalid JSON body'));
+      }
+    });
+
+    req.on('error', (error) => {
+      reject(error);
+    });
+  });
+}
+
+async function handleRemoteApiRequest(req, res, requestUrl) {
+  if (req.method === 'OPTIONS') {
+    writeRemoteCorsHeaders(res);
+    res.statusCode = 204;
+    res.end();
+    return;
+  }
+
+  if (!isRemoteApiAuthorized(req, requestUrl)) {
+    writeJsonResponse(res, 401, {
+      success: false,
+      error: 'Unauthorized request',
+    });
+    return;
+  }
+
+  if (requestUrl.pathname === '/api/status' && req.method === 'GET') {
+    writeJsonResponse(res, 200, getRemoteStatusPayload());
+    return;
+  }
+
+  if (requestUrl.pathname === '/api/update-settings' && req.method === 'POST') {
+    const payload = await readRequestBody(req);
+    const parsedKey = normalizeRemoteKey(
+      payload.key === undefined ? currentKey : String(payload.key || '')
+    );
+    const parsedInterval =
+      payload.interval === undefined ? currentInterval : normalizeRemoteInterval(payload.interval);
+
+    if (!parsedKey) {
+      writeJsonResponse(res, 400, {
+        success: false,
+        error: 'Target key is required',
+      });
+      return;
+    }
+
+    if (!Number.isFinite(parsedInterval)) {
+      writeJsonResponse(res, 400, {
+        success: false,
+        error: 'Interval must be between 10 and 600000 ms',
+      });
+      return;
+    }
+
+    currentKey = parsedKey;
+    currentInterval = parsedInterval;
+
+    if (isRunning) {
+      stopClicker();
+      const restartResult = await startClicker(currentKey, currentInterval);
+      if (!restartResult?.success) {
+        writeJsonResponse(res, 500, {
+          success: false,
+          error: restartResult?.error || 'Failed to apply settings while running',
+          status: getRemoteStatusPayload(),
+        });
+        return;
+      }
+    }
+
+    writeJsonResponse(res, 200, {
+      success: true,
+      status: getRemoteStatusPayload(),
+    });
+    return;
+  }
+
+  if (requestUrl.pathname === '/api/start-clicker' && req.method === 'POST') {
+    const payload = await readRequestBody(req);
+    const parsedKey = normalizeRemoteKey(
+      payload.key === undefined ? currentKey : String(payload.key || '')
+    );
+    const parsedInterval =
+      payload.interval === undefined ? currentInterval : normalizeRemoteInterval(payload.interval);
+
+    if (!parsedKey) {
+      writeJsonResponse(res, 400, {
+        success: false,
+        error: 'Target key is required',
+      });
+      return;
+    }
+
+    if (!Number.isFinite(parsedInterval)) {
+      writeJsonResponse(res, 400, {
+        success: false,
+        error: 'Interval must be between 10 and 600000 ms',
+      });
+      return;
+    }
+
+    const shouldRestart = isRunning && (parsedKey !== currentKey || parsedInterval !== currentInterval);
+    if (shouldRestart) {
+      stopClicker();
+    }
+
+    currentKey = parsedKey;
+    currentInterval = parsedInterval;
+    const result = await startClicker(currentKey, currentInterval);
+
+    writeJsonResponse(res, result?.success ? 200 : 500, {
+      success: Boolean(result?.success),
+      running: Boolean(result?.running),
+      error: result?.error || '',
+      status: getRemoteStatusPayload(),
+    });
+    return;
+  }
+
+  if (requestUrl.pathname === '/api/stop-clicker' && req.method === 'POST') {
+    const result = stopClicker();
+    writeJsonResponse(res, 200, {
+      success: Boolean(result?.success),
+      running: Boolean(result?.running),
+      status: getRemoteStatusPayload(),
+    });
+    return;
+  }
+
+  writeJsonResponse(res, 404, {
+    success: false,
+    error: 'API endpoint not found',
+  });
+}
+
+async function handleRemoteHttpRequest(req, res) {
+  const host = req.headers.host || `127.0.0.1:${remoteServerPort}`;
+  const requestUrl = new URL(req.url || '/', `http://${host}`);
+  const pathname = requestUrl.pathname;
+
+  if (pathname.startsWith('/api/')) {
+    await handleRemoteApiRequest(req, res, requestUrl);
+    return;
+  }
+
+  if (pathname === '/' || pathname === '/remote') {
+    if (!safeTokensMatch(requestUrl.searchParams.get('token') || '')) {
+      writeHtmlResponse(
+        res,
+        401,
+        '<!doctype html><html><body style="font-family:Segoe UI,sans-serif;padding:18px;background:#0b1020;color:#f8fafc;">Unauthorized remote link. Please scan the latest QR code from the desktop app.</body></html>'
+      );
+      return;
+    }
+
+    writeHtmlResponse(
+      res,
+      200,
+      renderRemoteControlPage({
+        token: remoteAccessToken,
+      })
+    );
+    return;
+  }
+
+  writeHtmlResponse(
+    res,
+    404,
+    '<!doctype html><html><body style="font-family:Segoe UI,sans-serif;padding:18px;">Not Found</body></html>'
+  );
+}
+
+async function startRemoteControlServer() {
+  if (remoteServer) return;
+  remoteServerError = '';
+
+  for (let offset = 0; offset <= REMOTE_SERVER_PORT_SCAN_LIMIT; offset += 1) {
+    const candidatePort = REMOTE_SERVER_DEFAULT_PORT + offset;
+    const server = http.createServer((req, res) => {
+      Promise.resolve(handleRemoteHttpRequest(req, res)).catch((error) => {
+        console.error('[Remote] Request error:', error.message);
+        if (res.headersSent) {
+          try {
+            res.end();
+          } catch {
+            // ignore write errors on half-closed sockets
+          }
+          return;
+        }
+        writeJsonResponse(res, 500, {
+          success: false,
+          error: 'Remote server internal error',
+        });
+      });
+    });
+
+    try {
+      await new Promise((resolve, reject) => {
+        const onError = (error) => reject(error);
+        server.once('error', onError);
+        server.listen(candidatePort, '0.0.0.0', () => {
+          server.removeListener('error', onError);
+          resolve();
+        });
+      });
+
+      remoteServer = server;
+      remoteServerPort = candidatePort;
+      console.log(`[Remote] Control server listening on port ${candidatePort}`);
+      return;
+    } catch (error) {
+      try {
+        server.close();
+      } catch {
+        // ignore
+      }
+
+      if (error?.code === 'EADDRINUSE') {
+        continue;
+      }
+
+      remoteServerError = error?.message || 'Unknown remote server error';
+      console.error('[Remote] Failed to start control server:', remoteServerError);
+      return;
+    }
+  }
+
+  remoteServerError = `Remote server port ${REMOTE_SERVER_DEFAULT_PORT}-${REMOTE_SERVER_DEFAULT_PORT + REMOTE_SERVER_PORT_SCAN_LIMIT} is unavailable`;
+  console.error(`[Remote] ${remoteServerError}`);
+}
+
+function stopRemoteControlServer() {
+  if (!remoteServer) return;
+  try {
+    remoteServer.close();
+  } catch {
+    // ignore close errors
+  }
+  remoteServer = null;
 }
 
 let scriptPath = null;
@@ -922,14 +1350,18 @@ async function startClicker(key, intervalMs) {
     return { success: false, error };
   }
 
+  currentKey = key;
+  currentInterval = intervalMs;
+  clickerTickCount = 0;
   isRunning = true;
 
   clickerInterval = setInterval(() => {
-    simulateKeyPress(key);
+    simulateKeyPress(currentKey);
+    clickerTickCount += 1;
     if (mainWindow) {
       mainWindow.webContents.send('clicker-tick');
     }
-  }, intervalMs);
+  }, currentInterval);
 
   if (mainWindow) {
     mainWindow.webContents.send('clicker-status', { running: true });
@@ -954,8 +1386,9 @@ function stopClicker() {
   return { success: true, running: false };
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   initKeySimulator();
+  await startRemoteControlServer();
   createWindow();
   registerGlobalHotkeys();
 });
@@ -965,6 +1398,7 @@ app.on('window-all-closed', () => {
   stopClicker();
   stopMacroPlayback();
   destroyKeySimulator();
+  stopRemoteControlServer();
   if (process.platform !== 'darwin') {
     app.quit();
   }
@@ -974,9 +1408,15 @@ app.on('before-quit', () => {
   stopClicker();
   stopMacroPlayback();
   destroyKeySimulator();
+  stopRemoteControlServer();
 });
 
 app.on('activate', () => {
+  if (!remoteServer) {
+    startRemoteControlServer().catch((error) => {
+      remoteServerError = error?.message || 'Failed to start remote server';
+    });
+  }
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow();
   }
@@ -999,7 +1439,11 @@ ipcMain.handle('stop-clicker', () => {
 });
 
 ipcMain.handle('get-status', () => {
-  return { running: isRunning };
+  return getRemoteStatusPayload();
+});
+
+ipcMain.handle('get-remote-access', () => {
+  return getRemoteAccessInfo();
 });
 
 ipcMain.handle('save-macro-recording', (event, { events }) => {

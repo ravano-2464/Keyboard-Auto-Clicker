@@ -111,6 +111,29 @@ Runs Vite + Electron together, so the app opens immediately as a desktop app.
 npm run dev:web
 ```
 
+### 📱 Run Mobile Remote via Expo Go
+
+1. Start desktop app first:
+
+```bash
+npm run dev
+```
+
+2. Install mobile dependencies once:
+
+```bash
+npm run install:mobile
+```
+
+3. In another terminal, start Expo:
+
+```bash
+npm run dev:mobile
+```
+
+4. In desktop app panel `Expo Go QR`, scan QR with **Expo Go**.
+5. URL remote akan terisi otomatis di app Expo. Tap **Connect Remote**.
+
 ### 🏗️ Build Production
 
 ```bash
@@ -125,6 +148,9 @@ Installer/build output is generated in the `release/` folder.
 | ------------------------ | ---------------------------------------------- |
 | `npm run dev`            | Run Vite + Electron (desktop development)      |
 | `npm run dev:web`        | Run Vite in web-only mode (without Electron)   |
+| `npm run install:mobile` | Install Expo mobile dependencies               |
+| `npm run dev:mobile`     | Start Expo dev server (port `8083`)            |
+| `npm run dev:mobile:clear` | Start Expo dev server with cleared cache     |
 | `npm run build`          | Build the frontend with Vite                   |
 | `npm run preview`        | Preview the frontend build                     |
 | `npm run lint`           | Run ESLint                                     |

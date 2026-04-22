@@ -10,6 +10,7 @@ import IntervalSettings from './components/IntervalSettings';
 import RepeatMode from './components/RepeatMode';
 import KeyboardRecorder from './components/KeyboardRecorder';
 import StatsBar from './components/StatsBar';
+import MobileBridgePanel from './components/MobileBridgePanel';
 import { useAppController } from './hooks/useAppController';
 import { getTranslations, translateRuntimeMessage } from './i18n';
 
@@ -216,6 +217,8 @@ function App() {
           macroError={translatedMacroError}
           copy={copy.keyboardRecorder}
         />
+
+        <MobileBridgePanel language={language} />
 
         <div className="action-section">
           <button className={`action-btn ${isRunning ? 'stop' : 'start'}`} onClick={toggleClicker}>
