@@ -183,32 +183,54 @@ Installer/build output is generated in the `release/` folder.
 ## 📁 Project Structure
 
 ```text
-Keyboard Auto Clicker/
-├── electron/                          # Electron-side code (main process + bridge)
-│   ├── main.cjs                       # Creates the window, IPC handlers, global hotkeys, clicker & macro engine
-│   └── preload.cjs                    # Exposes a safe API to the renderer via contextBridge
-├── src/                               # React UI code (renderer process)
-│   ├── components/                    # Modular UI components
-│   │   ├── styles/                    # Centralized design tokens for components
-│   │   │   ├── colors.css             # Dark/light mode color tokens
-│   │   │   └── typography.css         # Typography tokens (font-size, line-height, font-weight, etc.)
-│   │   ├── IntervalSettings.jsx       # Auto clicker interval settings UI
-│   │   ├── KeyboardRecorder.jsx       # Macro recording/playback UI + manual editor + hotkey settings
-│   │   ├── KeySelector.jsx            # Target key selector UI for the auto clicker
-│   │   ├── RepeatMode.jsx             # Repeat mode UI (Infinite / Custom Count)
-│   │   ├── StatsBar.jsx               # Runtime stats panel (clicks, time, active key)
-│   │   ├── StatusOrb.jsx              # Idle/running status indicator
-│   │   └── TitleBar.jsx               # Custom title bar (minimize, maximize, close, toggle theme)
-│   ├── hooks/                         # Logic layer (state + effects + helpers)
-│   │   ├── appHelpers.js              # App helper functions & utility constants
-│   │   └── useAppController.js        # Centralized app state/effects/callbacks
-│   ├── App.css                        # Main application layout styling
-│   ├── App.jsx                        # Root UI; consumes `useAppController` and renders components
-│   ├── index.css                      # Global styles/reset
-│   └── main.jsx                       # React entry point (mounts to the DOM)
-├── public/                            # Public assets (icons/static files)
-├── package.json                       # npm scripts, dependencies, project metadata, build config
-└── README.md                          # Project documentation
+📦 Keyboard Auto Clicker/
+├── 📁 electron
+│   ├── 📄 main.cjs
+│   ├── 📄 preload.cjs
+│   └── 📄 remoteControlPage.cjs
+├── 📁 mobile-expo
+│   ├── 📁 assets
+│   │   ├── 🖼️ adaptive-icon.png
+│   │   ├── 🖼️ favicon.png
+│   │   ├── 🖼️ icon.png
+│   │   └── 🖼️ splash-icon.png
+│   ├── ⚙️ .gitignore
+│   ├── 📄 App.js
+│   ├── ⚙️ app.json
+│   ├── 📄 index.js
+│   ├── ⚙️ package-lock.json
+│   └── ⚙️ package.json
+├── 📁 public
+│   └── 🖼️ vite.svg
+├── 📁 src
+│   ├── 📁 components
+│   │   ├── 📁 styles
+│   │   │   ├── 🎨 colors.css
+│   │   │   └── 🎨 typography.css
+│   │   ├── 📄 IntervalSettings.jsx
+│   │   ├── 📄 KeySelector.jsx
+│   │   ├── 📄 KeyboardRecorder.jsx
+│   │   ├── 📄 MobileBridgePanel.jsx
+│   │   ├── 📄 RepeatMode.jsx
+│   │   ├── 📄 StatsBar.jsx
+│   │   ├── 📄 StatusOrb.jsx
+│   │   └── 📄 TitleBar.jsx
+│   ├── 📁 hooks
+│   │   ├── 📄 appHelpers.js
+│   │   └── 📄 useAppController.js
+│   ├── 🎨 App.css
+│   ├── 📄 App.jsx
+│   ├── 📄 i18n.js
+│   ├── 🎨 index.css
+│   └── 📄 main.jsx
+├── ⚙️ .gitignore
+├── ⚙️ .prettierrc
+├── 📝 README.md
+├── 📄 eslint.config.js
+├── 🌐 index.html
+├── ⚙️ package-lock.json
+├── ⚙️ package.json
+└── 📄 vite.config.js
 ```
 
 ## 📝 Notes
