@@ -1,11 +1,18 @@
 import { useEffect, useState } from 'react';
 import { Copy, Globe2, Minus, Square, X, Keyboard, Moon, Sun } from 'lucide-react';
 
-export default function TitleBar({ theme, onToggleTheme, language, onLanguageChange, copy }) {
+export default function TitleBar({
+  theme,
+  onToggleTheme,
+  language,
+  onLanguageChange,
+  copy,
+  showWindowControls = true,
+}) {
   const [isMaximized, setIsMaximized] = useState(false);
 
   useEffect(() => {
-    if (!window.electronAPI) return;
+    if (!showWindowControls || !window.electronAPI) return;
 
     let isMounted = true;
 
@@ -26,7 +33,7 @@ export default function TitleBar({ theme, onToggleTheme, language, onLanguageCha
       isMounted = false;
       cleanup?.();
     };
-  }, []);
+  }, [showWindowControls]);
 
   const handleMinimize = () => {
     if (window.electronAPI) {
@@ -90,20 +97,24 @@ export default function TitleBar({ theme, onToggleTheme, language, onLanguageCha
         >
           {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
         </button>
-        <button type="button" className="titlebar-btn" onClick={handleMinimize} title={copy.minimize}>
-          <Minus size={14} />
-        </button>
-        <button
-          type="button"
-          className="titlebar-btn"
-          onClick={handleMaximize}
-          title={isMaximized ? copy.restore : copy.maximize}
-        >
-          {isMaximized ? <Copy size={12} /> : <Square size={12} />}
-        </button>
-        <button type="button" className="titlebar-btn close" onClick={handleClose} title={copy.close}>
-          <X size={14} />
-        </button>
+        {showWindowControls && (
+          <>
+            <button type="button" className="titlebar-btn" onClick={handleMinimize} title={copy.minimize}>
+              <Minus size={14} />
+            </button>
+            <button
+              type="button"
+              className="titlebar-btn"
+              onClick={handleMaximize}
+              title={isMaximized ? copy.restore : copy.maximize}
+            >
+              {isMaximized ? <Copy size={12} /> : <Square size={12} />}
+            </button>
+            <button type="button" className="titlebar-btn close" onClick={handleClose} title={copy.close}>
+              <X size={14} />
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

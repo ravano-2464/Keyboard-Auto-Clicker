@@ -11,6 +11,10 @@
   position: relative;
 }
 
+.app-container.web-shell {
+  border-radius: 0;
+}
+
 .app-container.window-full-bleed {
   border-radius: 0;
 }

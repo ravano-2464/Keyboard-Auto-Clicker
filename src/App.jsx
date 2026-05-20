@@ -15,6 +15,7 @@ import { useAppController } from './hooks/useAppController';
 import { getTranslations, translateRuntimeMessage } from './i18n';
 
 function App() {
+  const isElectronShell = typeof window !== 'undefined' && Boolean(window.electronAPI);
   const [windowState, setWindowState] = useState({
     isMaximized: false,
     isFullScreen: false,
@@ -118,16 +119,25 @@ function App() {
     };
   }, []);
 
-  const isWindowFullBleed = windowState.isMaximized || windowState.isFullScreen;
+  const isWindowFullBleed =
+    isElectronShell && (windowState.isMaximized || windowState.isFullScreen);
+  const appContainerClassName = [
+    'app-container',
+    isWindowFullBleed ? 'window-full-bleed' : '',
+    !isElectronShell ? 'web-shell' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
-    <div className={`app-container ${isWindowFullBleed ? 'window-full-bleed' : ''}`}>
+    <div className={appContainerClassName}>
       <TitleBar
         theme={theme}
         onToggleTheme={toggleTheme}
         language={language}
         onLanguageChange={setLanguage}
         copy={copy.titleBar}
+        showWindowControls={isElectronShell}
       />
 
       <div className="main-content">
